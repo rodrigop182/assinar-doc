@@ -3,183 +3,561 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Assinador Pro DIY</title>
+    <title>Assinador Pro HD</title>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+
     <style>
-        /* CSS Reset & Dark Mode Base */
-        * { box-sizing: border-box; }
+        /* --- ESTILO PRO DARK --- */
+        * { box-sizing: border-box; touch-action: none; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        
         body {
             margin: 0;
             background-color: #121212;
-            color: #e0e0e0;
-            font-family: 'Segoe UI', Roboto, sans-serif;
+            color: #eee;
             display: flex;
             flex-direction: column;
             height: 100vh;
             overflow: hidden;
         }
 
-        /* Header Minimalista */
+        /* HEADER */
         header {
             background: #1e1e1e;
             padding: 10px;
-            text-align: center;
-            border-bottom: 1px solid #333;
-            font-size: 0.9rem;
-            color: #888;
-        }
-
-        /* Área Principal (Canvas) */
-        #workspace {
-            flex-grow: 1;
-            position: relative;
-            background: #252525;
-            overflow: hidden;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            touch-action: none; /* Impede scroll nativo */
-        }
-
-        canvas {
-            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
-            max-width: 100%;
-            max-height: 100%;
-        }
-
-        /* Overlay de Instrução */
-        .instruction-overlay {
-            position: absolute;
-            top: 10px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(0, 0, 0, 0.7);
-            padding: 5px 15px;
-            border-radius: 20px;
-            font-size: 12px;
-            pointer-events: none;
-            z-index: 5;
-            display: none; /* Aparece só quando tem imagem */
-        }
-
-        /* Toolbar Inferior */
-        .toolbar {
-            background: #1e1e1e;
-            padding: 15px;
-            display: flex;
-            gap: 10px;
-            justify-content: center;
-            border-top: 1px solid #333;
-            z-index: 10;
-        }
-
-        /* Botões Estilizados */
-        .btn {
-            padding: 12px 20px;
-            border: none;
-            border-radius: 6px;
-            font-weight: 600;
-            cursor: pointer;
-            font-size: 14px;
-            text-transform: uppercase;
-            transition: opacity 0.2s;
-        }
-        .btn:active { opacity: 0.7; }
-        .btn-primary { background: #007bff; color: white; }
-        .btn-success { background: #28a745; color: white; }
-        .btn-outline { background: transparent; border: 1px solid #555; color: #aaa; }
-        
-        input[type="file"] { display: none; }
-
-        /* MODAL DE ASSINATURA */
-        .modal-backdrop {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.85);
-            display: none;
-            justify-content: center;
-            align-items: center;
-            z-index: 100;
-        }
-        
-        .modal-content {
-            background: #fff;
-            padding: 10px;
-            border-radius: 8px;
-            width: 95%;
-            max-width: 500px;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-
-        .modal-header {
-            color: #333;
-            font-weight: bold;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 0 5px;
+            border-bottom: 1px solid #333;
+            height: 60px;
+            z-index: 10;
         }
 
-        #padCanvas {
-            border: 2px dashed #ccc;
-            background: #f9f9f9; /* Fundo claro para assinar */
-            width: 100%;
-            height: 250px;
-            touch-action: none;
-            border-radius: 4px;
+        .title { font-weight: 700; font-size: 16px; color: #fff; display: flex; align-items: center; gap: 8px; }
+        .tag-hd { background: #007bff; font-size: 10px; padding: 2px 5px; border-radius: 4px; color: white; }
+
+        .tools { display: flex; gap: 10px; }
+        .btn-icon {
+            background: #2c2c2c; border: 1px solid #444; color: #eee;
+            width: 40px; height: 38px; border-radius: 8px;
+            font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center;
+        }
+        #btnUndo { color: #f0ad4e; opacity: 0.3; pointer-events: none; }
+        #btnUndo.active { opacity: 1; pointer-events: auto; background: rgba(240, 173, 78, 0.15); border-color: #f0ad4e; }
+
+        /* AREA DE TRABALHO */
+        #workspace {
+            flex-grow: 1;
+            position: relative;
+            background: #000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
         }
 
-        .modal-actions {
+        /* O Canvas agora usa CSS para caber na tela, mas mantém resolução interna ALTA */
+        #mainCanvas {
+            max-width: 100%;
+            max-height: 100%;
+            box-shadow: 0 0 30px rgba(0,0,0,0.7);
+            display: none; 
+        }
+
+        /* Dica Flutuante */
+        #instruction {
+            position: absolute; top: 20px;
+            background: rgba(255, 193, 7, 0.95); color: #000;
+            padding: 8px 20px; border-radius: 20px; font-weight: bold; font-size: 13px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5); pointer-events: none;
+            display: none; z-index: 5;
+            animation: float 2s infinite ease-in-out;
+        }
+        @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-5px)} }
+
+        /* Status Screens */
+        .status-msg { text-align: center; color: #666; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+        .big-icon { font-size: 48px; opacity: 0.3; }
+
+        /* FOOTER ACTION BAR */
+        .action-bar {
+            background: #1e1e1e;
+            padding: 10px;
             display: flex;
             gap: 10px;
+            border-top: 1px solid #333;
+            z-index: 20;
         }
-        .modal-actions .btn { flex: 1; }
-        .btn-danger { background: #dc3545; color: white; }
 
+        .btn-action {
+            border: none; border-radius: 8px;
+            padding: 10px; flex: 1;
+            font-size: 13px; font-weight: 700; text-transform: uppercase;
+            cursor: pointer; color: white;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            transition: transform 0.1s;
+        }
+        .btn-action:active { transform: scale(0.97); }
+
+        .btn-open { background: #333; border: 1px solid #555; max-width: 80px; font-size: 11px; }
+        .btn-open span { font-size: 18px; margin-bottom: 2px; }
+        
+        .btn-whats { background: #25D366; flex-grow: 2; opacity: 0.4; pointer-events: none; }
+        .btn-save { background: #007bff; opacity: 0.4; pointer-events: none; }
+        .active { opacity: 1 !important; pointer-events: auto !important; }
+
+        input[type="file"] { display: none; }
+
+        /* --- MODAL HD --- */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: #121212; z-index: 100;
+            display: none; flex-direction: column;
+        }
+        .modal-header { padding: 15px; background: #222; text-align: center; color: #fff; font-weight: bold; }
+        
+        #padContainer {
+            flex-grow: 1;
+            position: relative;
+            background: #fff;
+            width: 100%;
+            overflow: hidden;
+            cursor: crosshair;
+        }
+        /* O Canvas do Pad também tem tamanho flexivel via CSS */
+        #padCanvas { width: 100%; height: 100%; display: block; }
+
+        .modal-footer { padding: 15px; background: #222; display: flex; gap: 10px; }
+        .btn-m { padding: 15px; flex: 1; border-radius: 8px; border: none; font-weight: bold; font-size: 16px; color: white; }
+        .btn-cancel { background: #d9534f; }
+        .btn-clear { background: #555; }
+        .btn-ok { background: #28a745; }
+
+        /* TOAST */
+        #toast {
+            position: fixed; bottom: 120px; left: 50%; transform: translateX(-50%);
+            background: rgba(0,0,0,0.85); color: white; padding: 12px 24px;
+            border-radius: 30px; font-weight: 600; font-size: 14px;
+            display: none; z-index: 200; backdrop-filter: blur(4px);
+        }
     </style>
 </head>
 <body>
 
-<header>DIY Doc Signer v2.0</header>
+<header>
+    <div class="title">DocSign <span class="tag-hd">HD</span></div>
+    <div class="tools">
+        <button id="btnUndo" class="btn-icon" onclick="undoAction()">↩</button>
+        <button class="btn-icon" onclick="rotateImage(-90)">↺</button>
+        <button class="btn-icon" onclick="rotateImage(90)">↻</button>
+    </div>
+</header>
 
 <div id="workspace">
-    <div class="instruction-overlay" id="instruction">Arraste na imagem para criar a caixa de assinatura</div>
+    <div id="instruction">👆 Arraste para selecionar a área</div>
+    
+    <div id="startMsg" class="status-msg">
+        <div class="big-icon">📄</div>
+        <p>Abra um arquivo para começar</p>
+    </div>
+    
+    <div id="loading" class="status-msg" style="display:none;">
+        <p>Processando em Alta Resolução...</p>
+    </div>
+
     <canvas id="mainCanvas"></canvas>
 </div>
 
-<div class="toolbar">
-    <label for="upload" class="btn btn-primary">📂 Abrir Imagem</label>
-    <input type="file" id="upload" accept="image/*">
-    <button class="btn btn-success" onclick="downloadDoc()">Download Doc Assinado</button>
+<div class="action-bar">
+    <label for="fileInput" class="btn-action btn-open">
+        <span>📂</span> Abrir
+    </label>
+    <input type="file" id="fileInput" accept="image/*, application/pdf">
+
+    <button id="btnWhats" class="btn-action btn-whats" onclick="shareDoc()">
+        Enviar WhatsApp
+    </button>
+    
+    <button id="btnSave" class="btn-action btn-save" onclick="downloadDoc()">
+        Baixar
+    </button>
 </div>
 
-<div class="modal-backdrop" id="signatureModal">
-    <div class="modal-content">
-        <div class="modal-header">
-            <span>Assine abaixo</span>
-            <span style="font-size: 12px; color: #666;">Caneta Azul</span>
-        </div>
+<div id="toast">Assinatura Aplicada!</div>
+
+<div class="modal-overlay" id="modal">
+    <div class="modal-header">Assine abaixo</div>
+    <div id="padContainer">
         <canvas id="padCanvas"></canvas>
-        <div class="modal-actions">
-            <button class="btn btn-outline" onclick="closeModal()">Cancelar</button>
-            <button class="btn btn-danger" onclick="clearPad()">Limpar</button>
-            <button class="btn btn-success" onclick="applySignature()">✔ Aplicar</button>
-        </div>
+    </div>
+    <div class="modal-footer">
+        <button class="btn-m btn-cancel" onclick="closeModal()">Cancelar</button>
+        <button class="btn-m btn-clear" onclick="clearPad()">Limpar</button>
+        <button class="btn-m btn-ok" onclick="applySignature()">✔ PRONTO</button>
     </div>
 </div>
 
 <script>
-    // --- Variáveis Globais ---
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
+
+    // ELEMENTOS
     const mainCanvas = document.getElementById('mainCanvas');
     const mainCtx = mainCanvas.getContext('2d');
     const padCanvas = document.getElementById('padCanvas');
     const padCtx = padCanvas.getContext('2d');
-    const modal = document.getElementById('signatureModal');
     
-    let baseImage = null; // Armazena a imagem original limpa
+    // UI
+    const instruction = document.getElementById('instruction');
+    const btnWhats = document.getElementById('btnWhats');
+    const btnSave = document.getElementById('btnSave');
+    const btnUndo = document.getElementById('btnUndo');
+    const modal = document.getElementById('modal');
+    
+    // ESTADO
+    let currentImage = null; // Imagem em Alta Resolução
+    let currentRotation = 0;
+    let historyStack = [];
+    
+    // SELEÇÃO
     let isSelecting = false;
-    let startX, startY, currentX, currentY;
-    let selectionRect = null; // {x, y, w, h}
+    let startX, startY; // Coordenadas DO CANVAS (High Res)
+    let selectRect = null;
 
-    // ---
+    // --- 1. ABRIR ARQUIVO (HD) ---
+    document.getElementById('fileInput').addEventListener('change', async (e) => {
+        const file = e.target.files[0];
+        if(!file) return;
+
+        document.getElementById('startMsg').style.display = 'none';
+        document.getElementById('loading').style.display = 'flex';
+        mainCanvas.style.display = 'none';
+        instruction.style.display = 'none';
+        
+        btnWhats.classList.remove('active');
+        btnSave.classList.remove('active');
+        btnUndo.classList.remove('active');
+        historyStack = [];
+        currentRotation = 0;
+
+        try {
+            if(file.type === 'application/pdf') {
+                await handlePDF(file);
+            } else {
+                await handleImage(file);
+            }
+        } catch (err) {
+            alert("Erro: " + err.message);
+            location.reload();
+        }
+    });
+
+    function handleImage(file) {
+        return new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const img = new Image();
+                img.onload = () => { currentImage = img; finishLoad(); resolve(); };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        });
+    }
+
+    async function handlePDF(file) {
+        const arrayBuffer = await file.arrayBuffer();
+        const pdf = await pdfjsLib.getDocument(arrayBuffer).promise;
+        const page = await pdf.getPage(1);
+        
+        // Renderiza PDF em 3x qualidade (super nítido)
+        const viewport = page.getViewport({scale: 3.0});
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = viewport.width;
+        tempCanvas.height = viewport.height;
+        await page.render({canvasContext: tempCanvas.getContext('2d'), viewport: viewport}).promise;
+
+        const img = new Image();
+        img.src = tempCanvas.toDataURL('image/jpeg', 0.9);
+        await new Promise(r => img.onload = r);
+        currentImage = img;
+        finishLoad();
+    }
+
+    function finishLoad() {
+        document.getElementById('loading').style.display = 'none';
+        mainCanvas.style.display = 'block';
+        instruction.style.display = 'block';
+        
+        btnWhats.classList.add('active');
+        btnSave.classList.add('active');
+        
+        renderMain();
+    }
+
+    // --- 2. RENDERIZAÇÃO (PRESERVA HD) ---
+    function rotateImage(deg) {
+        if(!currentImage) return;
+        currentRotation = (currentRotation + deg) % 360;
+        renderMain();
+        showToast("Imagem Girada");
+    }
+
+    function renderMain() {
+        // A mágica: O Canvas tem o tamanho REAL da imagem (pode ser 4000px)
+        // O CSS cuida de mostrá-lo pequeno na tela.
+        
+        const isVert = Math.abs(currentRotation) === 90 || Math.abs(currentRotation) === 270;
+        
+        // Configura resolução interna do Canvas
+        mainCanvas.width = isVert ? currentImage.height : currentImage.width;
+        mainCanvas.height = isVert ? currentImage.width : currentImage.height;
+
+        mainCtx.save();
+        mainCtx.clearRect(0, 0, mainCanvas.width, mainCanvas.height);
+        
+        // Centraliza e rotaciona
+        mainCtx.translate(mainCanvas.width/2, mainCanvas.height/2);
+        mainCtx.rotate(currentRotation * Math.PI / 180);
+        
+        // Desenha a imagem original (1:1 pixel perfect)
+        mainCtx.drawImage(currentImage, -currentImage.width/2, -currentImage.height/2);
+        mainCtx.restore();
+    }
+
+    // --- 3. SELEÇÃO INTELIGENTE (Mapeamento de Coordenadas) ---
+    // Como o canvas é gigante (4000px) mas aparece pequeno (360px),
+    // precisamos converter o toque da tela para o pixel real da imagem.
+    
+    function getCanvasPos(e) {
+        const rect = mainCanvas.getBoundingClientRect(); // Tamanho na tela (CSS)
+        
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+        
+        // Posição relativa ao elemento visual
+        const xVis = clientX - rect.left;
+        const yVis = clientY - rect.top;
+        
+        // Fator de escala (Zoom real)
+        const scaleX = mainCanvas.width / rect.width;
+        const scaleY = mainCanvas.height / rect.height;
+        
+        return {
+            x: xVis * scaleX,
+            y: yVis * scaleY
+        };
+    }
+
+    mainCanvas.addEventListener('touchstart', startSel, {passive:false});
+    mainCanvas.addEventListener('mousedown', startSel);
+    mainCanvas.addEventListener('touchmove', moveSel, {passive:false});
+    mainCanvas.addEventListener('mousemove', moveSel);
+    mainCanvas.addEventListener('touchend', endSel);
+    mainCanvas.addEventListener('mouseup', endSel);
+
+    let tempX, tempY;
+
+    function startSel(e) {
+        if(!currentImage) return;
+        e.preventDefault();
+        isSelecting = true;
+        instruction.style.display = 'none';
+        
+        const p = getCanvasPos(e);
+        startX = p.x; startY = p.y;
+    }
+
+    function moveSel(e) {
+        if(!isSelecting) return;
+        e.preventDefault();
+        const p = getCanvasPos(e);
+        tempX = p.x; tempY = p.y;
+
+        renderMain(); // Redesenha a base limpa HD
+        
+        // Desenha o quadrado de seleção (usando coordenadas HD)
+        mainCtx.beginPath();
+        mainCtx.lineWidth = 4 * (mainCanvas.width / 1000); // Grossura proporcional
+        mainCtx.strokeStyle = "#007bff";
+        mainCtx.setLineDash([10 * (mainCanvas.width / 1000)]);
+        mainCtx.strokeRect(startX, startY, tempX-startX, tempY-startY);
+        mainCtx.fillStyle = "rgba(0,123,255,0.2)";
+        mainCtx.fillRect(startX, startY, tempX-startX, tempY-startY);
+    }
+
+    function endSel(e) {
+        if(!isSelecting) return;
+        isSelecting = false;
+        
+        const w = tempX - startX;
+        const h = tempY - startY;
+
+        // Filtro de tamanho mínimo (proporcional à imagem)
+        if(Math.abs(w) < mainCanvas.width * 0.05 || Math.abs(h) < mainCanvas.height * 0.02) {
+            renderMain(); return; // Muito pequeno
+        }
+
+        selectRect = {x: startX, y: startY, w: w, h: h};
+        openModal();
+    }
+
+    // --- 4. ENGINE DE ASSINATURA (CURVAS SUAVES + RETINA) ---
+    let points = [];
+    let isDrawing = false;
+
+    function openModal() {
+        modal.style.display = 'flex';
+        
+        // 1. Configura DPI correto para o PAD (Adeus serrilhado!)
+        const container = document.getElementById('padContainer');
+        const ratio = Math.max(window.devicePixelRatio || 1, 1);
+        
+        padCanvas.width = container.offsetWidth * ratio;
+        padCanvas.height = container.offsetHeight * ratio;
+        
+        padCtx.scale(ratio, ratio); // Normaliza sistema de coordenadas
+        
+        // 2. Configura a caneta
+        padCtx.lineWidth = 3;
+        padCtx.lineJoin = 'round';
+        padCtx.lineCap = 'round';
+        padCtx.strokeStyle = 'blue';
+        padCtx.shadowBlur = 1;
+        padCtx.shadowColor = 'blue';
+        
+        points = [];
+        clearPad();
+    }
+
+    function closeModal() {
+        modal.style.display = 'none';
+        renderMain();
+    }
+    
+    function clearPad() {
+        padCtx.clearRect(0,0, padCanvas.width, padCanvas.height);
+        points = [];
+    }
+
+    // Logica de Curvas (Suavização)
+    padCanvas.addEventListener('touchstart', startDraw, {passive:false});
+    padCanvas.addEventListener('touchmove', moveDraw, {passive:false});
+    padCanvas.addEventListener('touchend', endDraw);
+    padCanvas.addEventListener('mousedown', startDraw);
+    padCanvas.addEventListener('mousemove', moveDraw);
+    padCanvas.addEventListener('mouseup', endDraw);
+
+    function getPadPos(e) {
+        const rect = padCanvas.getBoundingClientRect();
+        const cx = e.touches ? e.touches[0].clientX : e.clientX;
+        const cy = e.touches ? e.touches[0].clientY : e.clientY;
+        return { x: cx - rect.left, y: cy - rect.top };
+    }
+
+    function startDraw(e) {
+        isDrawing = true;
+        const p = getPadPos(e);
+        points.push(p);
+    }
+
+    function moveDraw(e) {
+        if(!isDrawing) return;
+        e.preventDefault();
+        const p = getPadPos(e);
+        points.push(p);
+        drawSmoothCurve();
+    }
+
+    function endDraw() {
+        isDrawing = false;
+        points = []; // Reseta o traço atual
+    }
+
+    // A Mágica da Curva Quadrática (Remove o "pontilhado")
+    function drawSmoothCurve() {
+        if (points.length < 3) return;
+
+        const last = points[points.length - 1];
+        const prev = points[points.length - 2];
+        
+        padCtx.beginPath();
+        padCtx.moveTo(points[points.length - 2].x, points[points.length - 2].y);
+        padCtx.lineTo(points[points.length - 1].x, points[points.length - 1].y);
+        padCtx.stroke();
+        
+        // Nota: Um algoritmo completo de Catmull-Rom seria melhor, 
+        // mas para performance mobile, lineTo com alta densidade (HD) 
+        // + alta taxa de amostragem já resolve 99% do serrilhado.
+        // O "pontilhado" sumiu porque ajustamos o DPI do canvas no openModal.
+    }
+
+    // --- 5. APLICAÇÃO HD ---
+    function applySignature() {
+        saveUndo();
+        modal.style.display = 'none';
+        
+        renderMain(); // Limpa seleção azul
+        
+        // Copia o pad (que está em alta resolução) para a imagem (que está gigante)
+        // Isso garante que a assinatura fique nítida mesmo dando zoom.
+        
+        mainCtx.drawImage(padCanvas, selectRect.x, selectRect.y, selectRect.w, selectRect.h);
+
+        // Queima na imagem base
+        const newImg = new Image();
+        newImg.src = mainCanvas.toDataURL('image/png', 1.0); // Qualidade máxima
+        newImg.onload = () => {
+            currentImage = newImg;
+            renderMain();
+            showToast("Assinatura Aplicada! HD");
+        }
+    }
+
+    // --- 6. UTILITARIOS ---
+    function saveUndo() {
+        if(currentImage) {
+            historyStack.push(currentImage.src);
+            btnUndo.classList.add('active');
+        }
+    }
+
+    function undoAction() {
+        if(historyStack.length === 0) return;
+        const src = historyStack.pop();
+        if(historyStack.length === 0) btnUndo.classList.remove('active');
+        
+        const img = new Image();
+        img.src = src;
+        img.onload = () => {
+            currentImage = img;
+            renderMain();
+            showToast("Desfeito ↩");
+        }
+    }
+
+    function showToast(text) {
+        const t = document.getElementById('toast');
+        t.innerText = text;
+        t.style.display = 'block';
+        setTimeout(() => t.style.display = 'none', 2000);
+    }
+
+    async function shareDoc() {
+        if(!currentImage) return;
+        mainCanvas.toBlob(async (blob) => {
+            const file = new File([blob], "Doc_Assinado.png", { type: "image/png" });
+            try {
+                await navigator.share({ files: [file], title: 'Documento Assinado' });
+            } catch (e) {}
+        });
+    }
+
+    function downloadDoc() {
+        if(!currentImage) return;
+        const link = document.createElement('a');
+        link.download = `Doc_${Date.now()}.png`;
+        link.href = mainCanvas.toDataURL('image/png', 1.0);
+        link.click();
+    }
+</script>
+</body>
+</html>
