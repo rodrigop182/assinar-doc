@@ -6,12 +6,11 @@
     <title>Assina Fácil</title>
     
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🖊️</text></svg>">
-
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
 
     <style>
-        /* --- CORE CSS --- */
-        :root { --app-bg: #121212; --panel-bg: #1e1e1e; --primary: #007bff; }
+        /* --- CSS --- */
+        :root { --app-bg: #121212; --panel-bg: #1e1e1e; }
         
         * { box-sizing: border-box; touch-action: none; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; -webkit-tap-highlight-color: transparent; }
         
@@ -27,7 +26,7 @@
             height: 60px; border-bottom: 1px solid #333; z-index: 20; flex-shrink: 0;
         }
 
-        .title { font-weight: 700; font-size: 18px; color: #fff; letter-spacing: 0.5px; display: flex; align-items: center; gap: 8px;}
+        .title { font-weight: 700; font-size: 18px; color: #fff; display: flex; align-items: center; gap: 8px;}
         .tools { display: flex; gap: 12px; }
         
         .btn-icon {
@@ -36,7 +35,7 @@
             font-size: 20px; display: flex; align-items: center; justify-content: center; cursor: pointer;
             transition: background 0.2s;
         }
-        .btn-icon:active { background: #444; }
+        .btn-icon:hover { background: #444; }
 
         /* WORKSPACE */
         #workspace {
@@ -93,7 +92,6 @@
             height: 50px; cursor: pointer; transition: opacity 0.2s;
         }
         .btn-action:active { opacity: 0.7; }
-        
         .btn-open { background: #333; border: 1px solid #555; max-width: 80px; font-size: 10px; }
         .btn-whats { background: #25D366; flex-grow: 2; opacity: 0.3; pointer-events: none; }
         .btn-save { background: #007bff; opacity: 0.3; pointer-events: none; }
@@ -101,11 +99,12 @@
 
         input[type="file"] { display: none; }
 
-        /* --- MODAL --- */
+        /* --- MODAL (ENGINE V20 - Proportional) --- */
         .modal-overlay {
             position: fixed; top: 0; left: 0; 
             width: 100vw; height: 100dvh;
-            background: #fff; z-index: 9999;
+            background: #222; /* Fundo escuro para destacar o papel */
+            z-index: 9999;
             display: none; overflow: hidden;
         }
 
@@ -114,7 +113,6 @@
             width: 100%; height: 100%;
         }
 
-        /* LÓGICA DE ROTAÇÃO FORÇADA */
         .force-landscape {
             width: 100dvh !important;
             height: 100vw !important;
@@ -133,16 +131,24 @@
             padding-left: max(20px, env(safe-area-inset-left));
         }
 
+        /* Container que centraliza o papel */
         #padContainer { 
             flex-grow: 1; width: 100%; position: relative; overflow: hidden;
-            background-color: #fff;
-            /* Papel pautado sutil */
-            background-image: linear-gradient(#e5e5e5 1px, transparent 1px);
-            background-size: 100% 40px;
-            cursor: crosshair;
+            background-color: #333; /* Mesa escura */
+            display: flex; justify-content: center; align-items: center; /* Centraliza a folha */
+            padding: 20px;
         }
         
-        #padCanvas { width: 100%; height: 100%; display: block; touch-action: none; }
+        /* O Canvas agora tem tamanho visual definido via JS para manter proporção */
+        #padCanvas { 
+            background-color: #fff;
+            background-image: linear-gradient(#e5e5e5 1px, transparent 1px);
+            background-size: 100% 40px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5); /* Sombra de papel flutuando */
+            cursor: crosshair;
+            display: block;
+            touch-action: none;
+        }
 
         .modal-footer { 
             padding: 10px; background: #f8f9fa; display: flex; gap: 10px; 
@@ -158,8 +164,8 @@
 
         #watermark {
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            color: #e0e0e0; font-size: 5vh; font-weight: bold; pointer-events: none;
-            text-transform: uppercase; user-select: none;
+            color: #ddd; font-size: 1.5rem; font-weight: bold; pointer-events: none;
+            text-transform: uppercase; user-select: none; z-index: 5; white-space: nowrap;
         }
 
         #toast {
@@ -207,12 +213,12 @@
 <div class="modal-overlay" id="modal">
     <div class="modal-content">
         <div class="modal-header">
-            <span>✍️ Assine na Linha</span>
+            <span>✍️ Assine no Papel</span>
             <span onclick="closeModal()" style="font-size: 24px; padding: 0 10px; cursor: pointer; color:#666;">✕</span>
         </div>
 
         <div id="padContainer">
-            <div id="watermark">Tela Cheia</div>
+            <div id="watermark">Assine Aqui</div>
             <canvas id="padCanvas"></canvas>
         </div>
 
@@ -239,11 +245,9 @@
     let currentImage = null;
     let currentRotation = 0;
     let historyStack = [];
-    let selectRect = null;
+    let selectRect = null; // {x, y, w, h}
     let isSelecting = false;
     let startX, startY;
-    
-    // VARIÁVEIS DE CONTROLE
     let isForcedLandscape = false;
     let tempSignatureData = null;
 
@@ -286,7 +290,8 @@
         const d = await file.arrayBuffer();
         const pdf = await pdfjsLib.getDocument(d).promise;
         const page = await pdf.getPage(1);
-        const viewport = page.getViewport({scale: 3.0});
+        // Resolução insana para Desktop HD (Scale 4.0)
+        const viewport = page.getViewport({scale: 4.0});
         const c = document.createElement('canvas');
         c.width = viewport.width; c.height = viewport.height;
         await page.render({canvasContext:c.getContext('2d'), viewport}).promise;
@@ -323,6 +328,9 @@
         mainCtx.clearRect(0,0,mainCanvas.width, mainCanvas.height);
         mainCtx.translate(mainCanvas.width/2, mainCanvas.height/2);
         mainCtx.rotate(currentRotation * Math.PI / 180);
+        mainCtx.imageSmoothingEnabled = true;
+        mainCtx.imageSmoothingQuality = 'high';
+        
         mainCtx.drawImage(currentImage, -currentImage.width/2, -currentImage.height/2);
         mainCtx.restore();
     }
@@ -376,8 +384,7 @@
     mainCanvas.addEventListener('touchmove', moveSel, {passive:false});
     mainCanvas.addEventListener('touchend', endSel);
 
-    // --- LÓGICA DE ASSINATURA ---
-    
+    // --- ENGINE V20: PROPORTIONAL RATIO ---
     function checkOrientation() {
         if(window.innerHeight > window.innerWidth) {
             modalContent.classList.add('force-landscape');
@@ -391,6 +398,7 @@
     function openModal() {
         modal.style.display = 'flex';
         checkOrientation();
+        // Delay crítico para o CSS aplicar a rotação antes de medirmos o container
         setTimeout(() => { resizePad(true); }, 50);
         window.addEventListener('resize', handleResize);
     }
@@ -419,20 +427,43 @@
         }
     }
 
+    // FUNÇÃO MASTER DE REDIMENSIONAMENTO PROPORCIONAL
     function resizePad(clean) {
         const container = document.getElementById('padContainer');
-        const ratio = Math.max(window.devicePixelRatio || 1, 2); 
-        padCanvas.width = container.offsetWidth * ratio;
-        padCanvas.height = container.offsetHeight * ratio;
-        padCtx.scale(ratio, ratio);
         
-        // ESTILO CANETA AZUL REALISTA (BIC)
-        padCtx.lineWidth = 3.5; 
+        // Espaço disponível (descontando padding visual)
+        const maxWidth = container.clientWidth - 40; 
+        const maxHeight = container.clientHeight - 40;
+
+        // Ratio do Crop selecionado pelo usuário
+        const targetRatio = Math.abs(selectRect.w / selectRect.h);
+
+        // Calcula tamanho visual ideal (Fit to Screen maintaining Ratio)
+        let visualW = maxWidth;
+        let visualH = visualW / targetRatio;
+
+        if (visualH > maxHeight) {
+            visualH = maxHeight;
+            visualW = visualH * targetRatio;
+        }
+
+        // Aplica tamanho visual no CSS do Canvas (Centralizado)
+        padCanvas.style.width = `${visualW}px`;
+        padCanvas.style.height = `${visualH}px`;
+        
+        // Aplica tamanho interno para Alta Resolução (HD/4K)
+        // Usa DPR do dispositivo, mas no mínimo 2.5 para garantir nitidez em monitores comuns
+        const dpr = Math.max(window.devicePixelRatio || 1, 2.5);
+        padCanvas.width = visualW * dpr;
+        padCanvas.height = visualH * dpr;
+        padCtx.scale(dpr, dpr);
+        
+        // Estilo da Caneta (Azul Bic Sólido)
+        padCtx.lineWidth = 4;
         padCtx.lineJoin = 'round';
         padCtx.lineCap = 'round';
-        padCtx.strokeStyle = '#0033cc'; // Azul Bic
-        padCtx.shadowBlur = 0.5; // Leve borrão de tinta
-        padCtx.shadowColor = '#0033cc';
+        padCtx.strokeStyle = '#0033cc';
+        padCtx.shadowBlur = 0; // Removido para evitar sujeira/pontilhado no PC
 
         if(clean) clearPad();
     }
@@ -443,17 +474,24 @@
         document.getElementById('watermark').style.display = 'block'; 
     }
 
-    // --- COORDENADAS DO TOQUE ---
+    // --- DESENHO & MATRIZ DE CORREÇÃO ---
     let points = [], isDrawing = false;
 
     function getCorrectPos(e) {
         const pos = getClientPos(e);
-        const r = padCanvas.getBoundingClientRect();
+        const r = padCanvas.getBoundingClientRect(); // Bounding rect já pega a posição CSS final visual
         
         if(!isForcedLandscape) {
+             // Mapeamento normal, mas considerando o scaling interno do canvas x visual
+             const scaleX = padCanvas.width / r.width; // Fator DPR interno
+             const scaleY = padCanvas.height / r.height;
+             
+             // Como usamos ctx.scale(dpr, dpr), nós desenhamos em coordenadas lógicas (CSS pixels)
+             // O context entende coordenadas lógicas.
              return { x: pos.x - r.left, y: pos.y - r.top };
         } else {
-             // Mapeamento Inverso para Force Landscape (Celular em Pé)
+             // FORCE LANDSCAPE (Celular em pé)
+             // O "X" físico do toque vira "Y" do canvas
              const physicalX = pos.x - r.left;
              const physicalY = pos.y - r.top;
              return {
@@ -508,6 +546,8 @@
         if(currentImage) { historyStack.push(currentImage.src); document.getElementById('btnUndo').style.opacity=1; document.getElementById('btnUndo').style.pointerEvents='auto'; }
         closeModal();
         renderMain();
+        mainCtx.imageSmoothingEnabled = true;
+        mainCtx.imageSmoothingQuality = 'high';
         mainCtx.drawImage(padCanvas, selectRect.x, selectRect.y, selectRect.w, selectRect.h);
         const i = new Image();
         i.src = mainCanvas.toDataURL('image/png', 1.0);
