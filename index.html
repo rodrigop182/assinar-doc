@@ -3,31 +3,35 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Assinador V16 - Híbrido</title>
+    <title>Assinador V17 - Stable</title>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
 
     <style>
-        /* --- CSS IGUAL AO ANTERIOR (Mantendo o Dark Mode Pro) --- */
+        /* --- CSS --- */
+        :root { --app-bg: #121212; --panel-bg: #1e1e1e; --primary: #007bff; }
+        
         * { box-sizing: border-box; touch-action: none; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; -webkit-tap-highlight-color: transparent; }
         
         body {
-            margin: 0; background-color: #121212; color: #eee;
-            display: flex; flex-direction: column; height: 100dvh; overflow: hidden;
+            margin: 0; background-color: var(--app-bg); color: #eee;
+            display: flex; flex-direction: column; 
+            height: 100dvh; /* Altura dinâmica real */
+            overflow: hidden; /* Trava scroll do corpo */
         }
 
         /* HEADER */
         header {
-            background: #1e1e1e; padding: 10px 15px;
+            background: var(--panel-bg); padding: 10px 15px;
             display: flex; justify-content: space-between; align-items: center;
-            height: 60px; border-bottom: 1px solid #333; z-index: 20;
+            height: 60px; border-bottom: 1px solid #333; z-index: 20; flex-shrink: 0;
         }
 
         .title { font-weight: 700; font-size: 16px; color: #fff; }
         .tools { display: flex; gap: 12px; }
         .btn-icon {
             background: #2c2c2c; border: 1px solid #444; color: #eee;
-            width: 42px; height: 40px; border-radius: 8px;
+            width: 40px; height: 40px; border-radius: 8px;
             font-size: 20px; display: flex; align-items: center; justify-content: center; cursor: pointer;
         }
         .btn-icon:hover { background: #444; }
@@ -36,7 +40,8 @@
         #workspace {
             flex-grow: 1; position: relative; background: #000;
             display: flex; justify-content: center; align-items: center; overflow: hidden;
-            padding-bottom: 90px; cursor: crosshair;
+            padding-bottom: 80px; /* Espaço pro menu */
+            cursor: crosshair;
         }
 
         #mainCanvas {
@@ -48,7 +53,7 @@
         #startScreen {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             display: flex; flex-direction: column; justify-content: center; align-items: center;
-            background: #121212; z-index: 5;
+            background: var(--app-bg); z-index: 5;
         }
         
         .btn-big-open {
@@ -56,7 +61,6 @@
             width: 85%; padding: 40px 20px; border-radius: 16px;
             text-align: center; margin-top: -60px; transition: background 0.2s; cursor: pointer;
         }
-        .btn-big-open:hover { background: #333; }
         .btn-big-open span { font-size: 45px; display: block; margin-bottom: 15px; }
         .btn-big-open h3 { margin: 0; font-size: 20px; color: #fff; font-weight: 600; }
         
@@ -70,19 +74,20 @@
         
         #loading { display: none; color: #aaa; font-size: 14px; margin-top: 20px; }
 
-        /* ACTION BAR */
+        /* ACTION BAR FIXA */
         .action-bar {
             position: fixed; bottom: 0; left: 0; width: 100%;
-            background: #1e1e1e; padding: 12px;
-            padding-bottom: max(12px, env(safe-area-inset-bottom));
+            background: var(--panel-bg); padding: 10px;
+            padding-bottom: max(10px, env(safe-area-inset-bottom));
             display: flex; gap: 10px; border-top: 1px solid #333; z-index: 50;
+            height: auto;
         }
 
         .btn-action {
-            border: none; border-radius: 8px; padding: 10px; flex: 1;
+            border: none; border-radius: 8px; padding: 0; flex: 1;
             font-size: 12px; font-weight: 700; text-transform: uppercase;
             color: white; display: flex; flex-direction: column; align-items: center; justify-content: center;
-            height: 54px; cursor: pointer;
+            height: 50px; cursor: pointer;
         }
         .btn-open { background: #333; border: 1px solid #555; max-width: 80px; font-size: 10px; }
         .btn-whats { background: #25D366; flex-grow: 2; opacity: 0.3; pointer-events: none; }
@@ -91,61 +96,69 @@
 
         input[type="file"] { display: none; }
 
-        /* --- MODAL (Force Landscape Mobile) --- */
+        /* --- MODAL (ENGINE V17) --- */
         .modal-overlay {
-            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-            background: #f5f5f5; z-index: 9999;
-            display: none; flex-direction: column; overflow: hidden;
+            position: fixed; top: 0; left: 0; 
+            width: 100vw; height: 100dvh;
+            background: #fff; z-index: 9999;
+            display: none; 
+            overflow: hidden; /* Impede scroll interno */
         }
 
-        /* Se for celular em pé, força a rotação. Se for desktop, ignora. */
+        /* Estrutura Flex Interna do Modal (Para botões não sumirem) */
+        .modal-content {
+            display: flex; flex-direction: column;
+            width: 100%; height: 100%;
+        }
+
+        /* CLASSE DE ROTAÇÃO FORÇADA (Quando em Portrait) */
         .force-landscape {
-            width: 100vh !important;
-            height: 100vw !important;
+            width: 100dvh !important; /* Altura vira largura */
+            height: 100vw !important; /* Largura vira altura */
             transform: rotate(90deg);
             transform-origin: center;
             position: fixed;
             top: 50%; left: 50%;
-            margin-left: -50vh;
+            margin-left: -50dvh; /* Centraliza */
             margin-top: -50vw;
         }
 
         .modal-header { 
-            padding: 10px; background: #fff; text-align: center; color: #333; font-weight: bold; 
+            padding: 10px 20px; background: #eee; color: #333; font-weight: bold; 
             font-size: 14px; border-bottom: 1px solid #ddd;
-            display: flex; justify-content: space-between; align-items: center; padding-left: 20px; padding-right: 20px;
+            display: flex; justify-content: space-between; align-items: center;
             height: 50px; flex-shrink: 0;
+            padding-left: max(20px, env(safe-area-inset-left)); /* Proteção Notch na rotação */
         }
 
         #padContainer { 
-            flex-grow: 1; width: 100%; position: relative; overflow: hidden;
+            flex-grow: 1; /* Ocupa todo espaço restante */
+            width: 100%; position: relative; overflow: hidden;
             background-color: #fff;
             background-image: radial-gradient(#ccc 1.5px, transparent 1.5px);
             background-size: 20px 20px;
+            cursor: crosshair;
         }
         
-        #watermark {
-            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            color: #e0e0e0; font-size: 5vh; font-weight: bold; pointer-events: none;
-            text-transform: uppercase; text-align: center;
-        }
-
-        #baseline {
-            position: absolute; bottom: 20%; left: 5%; width: 90%; height: 2px;
-            border-bottom: 2px dashed #ddd; pointer-events: none;
-        }
-
-        #padCanvas { width: 100%; height: 100%; display: block; cursor: crosshair; }
+        #padCanvas { width: 100%; height: 100%; display: block; touch-action: none; }
 
         .modal-footer { 
-            padding: 10px; background: #fff; display: flex; gap: 10px; 
-            border-top: 1px solid #ddd; height: 70px; align-items: center; flex-shrink: 0;
+            padding: 10px; background: #eee; display: flex; gap: 10px; 
+            border-top: 1px solid #ddd; 
+            height: 70px; align-items: center; flex-shrink: 0;
+            padding-right: max(10px, env(safe-area-inset-right)); /* Proteção Notch na rotação */
         }
         
-        .btn-m { height: 45px; flex: 1; border-radius: 8px; border: none; font-weight: bold; font-size: 14px; color: white; cursor: pointer; }
+        .btn-m { height: 100%; flex: 1; border-radius: 8px; border: none; font-weight: bold; font-size: 14px; color: white; cursor: pointer; }
         .btn-cancel { background: #d9534f; max-width: 100px; }
         .btn-clear { background: #6c757d; max-width: 100px; }
         .btn-ok { background: #28a745; font-size: 16px; }
+
+        #watermark {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            color: #ddd; font-size: 5vh; font-weight: bold; pointer-events: none;
+            text-transform: uppercase; text-align: center; user-select: none;
+        }
 
         #toast {
             position: fixed; bottom: 50%; left: 50%; transform: translate(-50%, 50%);
@@ -157,7 +170,7 @@
 <body>
 
 <header>
-    <div class="title">Assinador V16</div>
+    <div class="title">Assinador V17</div>
     <div class="tools">
         <div id="btnUndo" class="btn-icon" onclick="undoAction()" style="opacity:0.3;">↩</div>
         <div class="btn-icon" onclick="rotateImage(-90)">↺</div>
@@ -172,7 +185,7 @@
             <h3>ABRIR ARQUIVO</h3>
             <p>PDF ou Imagem</p>
         </label>
-        <div id="loading">⌛ Processando...</div>
+        <div id="loading">⌛ Carregando...</div>
     </div>
 
     <div id="instruction">👆 Selecione onde quer assinar</div>
@@ -189,21 +202,22 @@
 <div id="toast">Sucesso!</div>
 
 <div class="modal-overlay" id="modal">
-    <div class="modal-header">
-        <span>✍️ Assinatura</span>
-        <span onclick="closeModal()" style="font-size: 20px; padding: 5px; cursor: pointer;">✕</span>
-    </div>
+    <div class="modal-content">
+        <div class="modal-header">
+            <span>✍️ Tela Cheia</span>
+            <span onclick="closeModal()" style="font-size: 24px; padding: 0 10px; cursor: pointer;">✕</span>
+        </div>
 
-    <div id="padContainer">
-        <div id="watermark">Assine na Tela Inteira</div>
-        <div id="baseline"></div>
-        <canvas id="padCanvas"></canvas>
-    </div>
+        <div id="padContainer">
+            <div id="watermark">Assine Aqui</div>
+            <canvas id="padCanvas"></canvas>
+        </div>
 
-    <div class="modal-footer">
-        <button class="btn-m btn-cancel" onclick="closeModal()">Cancelar</button>
-        <button class="btn-m btn-clear" onclick="clearPad()">Limpar</button>
-        <button class="btn-m btn-ok" onclick="applySignature()">✔ CONFIRMAR</button>
+        <div class="modal-footer">
+            <button class="btn-m btn-cancel" onclick="closeModal()">Cancelar</button>
+            <button class="btn-m btn-clear" onclick="clearPad()">Limpar</button>
+            <button class="btn-m btn-ok" onclick="applySignature()">✔ CONFIRMAR</button>
+        </div>
     </div>
 </div>
 
@@ -216,6 +230,7 @@
     const padCanvas = document.getElementById('padCanvas');
     const padCtx = padCanvas.getContext('2d');
     const modal = document.getElementById('modal');
+    const modalContent = document.querySelector('.modal-content');
     
     // ESTADO
     let currentImage = null;
@@ -224,9 +239,12 @@
     let selectRect = null;
     let isSelecting = false;
     let startX, startY;
+    
+    // ESTADO DA ASSINATURA
     let isForcedLandscape = false;
+    let tempSignatureData = null; // Para salvar o desenho ao girar
 
-    // --- ABRIR ---
+    // --- ABRIR ARQUIVO ---
     document.getElementById('fileInput').addEventListener('change', async (e) => {
         const file = e.target.files[0];
         if(!file) return;
@@ -239,7 +257,6 @@
         document.querySelector('.btn-big-open').style.display = 'none';
         document.getElementById('loading').style.display = 'block';
         mainCanvas.style.display = 'none';
-        
         document.getElementById('btnWhats').classList.remove('active');
         document.getElementById('btnSave').classList.remove('active');
         historyStack = []; currentRotation = 0;
@@ -266,7 +283,7 @@
         const d = await file.arrayBuffer();
         const pdf = await pdfjsLib.getDocument(d).promise;
         const page = await pdf.getPage(1);
-        const viewport = page.getViewport({scale: 2.5});
+        const viewport = page.getViewport({scale: 3.0}); // Qualidade Alta
         const c = document.createElement('canvas');
         c.width = viewport.width; c.height = viewport.height;
         await page.render({canvasContext:c.getContext('2d'), viewport}).promise;
@@ -287,7 +304,7 @@
         renderMain();
     }
 
-    // --- RENDER ---
+    // --- RENDER MAIN ---
     function rotateImage(deg) {
         if(!currentImage) return;
         currentRotation = (currentRotation + deg) % 360;
@@ -307,12 +324,9 @@
         mainCtx.restore();
     }
 
-    // --- SELEÇÃO HÍBRIDA (MOUSE + TOUCH) ---
-    // Helper para unificar coordenadas de mouse e touch
+    // --- SELEÇÃO ---
     function getClientPos(e) {
-        if(e.touches && e.touches.length > 0) {
-            return { x: e.touches[0].clientX, y: e.touches[0].clientY };
-        }
+        if(e.touches && e.touches.length > 0) return { x: e.touches[0].clientX, y: e.touches[0].clientY };
         return { x: e.clientX, y: e.clientY };
     }
 
@@ -324,66 +338,51 @@
         return { x: (pos.x - rect.left) * sx, y: (pos.y - rect.top) * sy };
     }
 
-    // Unificação de listeners
     function startSel(e) {
         if(!currentImage) return;
-        if(e.type === 'touchstart') e.preventDefault(); // Evita scroll no mobile
-        
-        isSelecting = true;
-        document.getElementById('instruction').style.display='none';
-        const p = getCanvasPos(e);
-        startX = p.x; startY = p.y;
+        if(e.type === 'touchstart') e.preventDefault();
+        isSelecting = true; document.getElementById('instruction').style.display='none';
+        const p = getCanvasPos(e); startX = p.x; startY = p.y;
     }
 
     function moveSel(e) {
         if(!isSelecting) return;
         e.preventDefault();
-        
         const p = getCanvasPos(e);
-        renderMain(); // Limpa
+        renderMain();
         mainCtx.lineWidth = 4 * (mainCanvas.width/1000);
-        mainCtx.strokeStyle = "#007bff";
-        mainCtx.setLineDash([10]);
+        mainCtx.strokeStyle = "#007bff"; mainCtx.setLineDash([10]);
         mainCtx.strokeRect(startX, startY, p.x-startX, p.y-startY);
         mainCtx.fillStyle = "rgba(0,123,255,0.2)";
         mainCtx.fillRect(startX, startY, p.x-startX, p.y-startY);
-        
-        // Guarda ultima posição para o 'touchend' que não tem coordenadas
         selectRect = { x: startX, y: startY, w: p.x - startX, h: p.y - startY };
     }
 
     function endSel(e) {
         if(!isSelecting) return;
         isSelecting = false;
-        
-        // Verifica se formou um retangulo válido (maior que 20px)
         if(selectRect && Math.abs(selectRect.w) > 20 && Math.abs(selectRect.h) > 20) {
             openModal();
-        } else {
-            renderMain(); // Limpa sujeira de clique acidental
-        }
+        } else { renderMain(); }
     }
 
-    // Adiciona Listeners MOUSE
     mainCanvas.addEventListener('mousedown', startSel);
     mainCanvas.addEventListener('mousemove', moveSel);
     mainCanvas.addEventListener('mouseup', endSel);
-
-    // Adiciona Listeners TOUCH
     mainCanvas.addEventListener('touchstart', startSel, {passive:false});
     mainCanvas.addEventListener('touchmove', moveSel, {passive:false});
     mainCanvas.addEventListener('touchend', endSel);
 
-
-    // --- ASSINATURA ---
-    let points = [], isDrawing = false;
-
+    // --- ASSINATURA & ROTAÇÃO INTELIGENTE ---
+    
     function checkOrientation() {
+        // Se a altura da janela for maior que largura = Portrait = FORÇA ROTAÇÃO
         if(window.innerHeight > window.innerWidth) {
-            modal.classList.add('force-landscape');
+            modalContent.classList.add('force-landscape');
             isForcedLandscape = true;
         } else {
-            modal.classList.remove('force-landscape');
+            // Se virou o celular e agora é Landscape = REMOVE ROTAÇÃO
+            modalContent.classList.remove('force-landscape');
             isForcedLandscape = false;
         }
     }
@@ -391,75 +390,154 @@
     function openModal() {
         modal.style.display = 'flex';
         checkOrientation();
-        setTimeout(() => { resizePad(); clearPad(); }, 50);
+        // Delay para garantir que o DOM atualizou antes de redimensionar o canvas
+        setTimeout(() => {
+            resizePad(true); // true = clean start
+        }, 50);
         window.addEventListener('resize', handleResize);
     }
 
-    function handleResize() { checkOrientation(); resizePad(); }
+    function handleResize() {
+        // 1. Salva o desenho atual
+        saveTempSignature();
+        // 2. Verifica nova orientação
+        checkOrientation();
+        // 3. Redimensiona o canvas
+        resizePad(false); // false = não apagar
+        // 4. Restaura o desenho (esticando se necessário, ou melhor, redesenhando)
+        restoreTempSignature();
+    }
 
     function closeModal() {
         modal.style.display = 'none';
-        modal.classList.remove('force-landscape');
         window.removeEventListener('resize', handleResize);
         renderMain();
     }
 
-    function resizePad() {
+    function saveTempSignature() {
+        // Salva apenas se tiver dimensões válidas
+        if(padCanvas.width > 0 && padCanvas.height > 0) {
+            tempSignatureData = padCanvas.toDataURL();
+        }
+    }
+
+    function restoreTempSignature() {
+        if(tempSignatureData) {
+            const img = new Image();
+            img.src = tempSignatureData;
+            img.onload = () => {
+                padCtx.drawImage(img, 0, 0, padCanvas.width, padCanvas.height);
+            };
+        }
+    }
+
+    function resizePad(clean) {
         const container = document.getElementById('padContainer');
-        const ratio = Math.max(window.devicePixelRatio || 1, 1);
+        // Ratio 2 para telas retina (qualidade HD)
+        const ratio = Math.max(window.devicePixelRatio || 1, 2); 
+        
         padCanvas.width = container.offsetWidth * ratio;
         padCanvas.height = container.offsetHeight * ratio;
         padCtx.scale(ratio, ratio);
-        padCtx.lineWidth = 3; padCtx.lineJoin = 'round'; padCtx.lineCap = 'round'; padCtx.strokeStyle = '#000080';
+        
+        // Configura Caneta
+        padCtx.lineWidth = 4; // Mais grosso para ver bem
+        padCtx.lineJoin = 'round';
+        padCtx.lineCap = 'round';
+        padCtx.strokeStyle = '#000000'; // Preto sólido
+        padCtx.shadowBlur = 0.5; // Suaviza bordas
+        padCtx.shadowColor = '#000000';
+
+        if(clean) clearPad();
     }
 
     function clearPad() { 
         padCtx.clearRect(0,0,padCanvas.width,padCanvas.height); 
-        points=[]; document.getElementById('watermark').style.display = 'block'; 
+        points=[]; tempSignatureData=null;
+        document.getElementById('watermark').style.display = 'block'; 
     }
 
-    // Coordenadas Corretas (Híbrido Mouse/Touch + Force Landscape)
+    // --- INPUT DA ASSINATURA (CORREÇÃO DE COORDENADAS) ---
+    let points = [], isDrawing = false;
+
     function getCorrectPos(e) {
-        const pos = getClientPos(e); // Pega X/Y brutos da tela (Mouse ou Touch)
+        const pos = getClientPos(e);
         
         if(!isForcedLandscape) {
+             // Modo Normal (Desktop ou Celular Deitado Nativo)
              const r = padCanvas.getBoundingClientRect();
              return { x: pos.x - r.left, y: pos.y - r.top };
         } else {
-             // Lógica Force Landscape (Gira coordenadas 90 graus)
+             // Modo Forçado (Celular em Pé -> Tela Girada 90º)
+             // O "X" da tela vira o "Y" do canvas (invertido pela rotação?)
+             // A tela gira em torno do centro.
+             
+             // Mapeamento Correto V17:
+             // Toque X (da esquerda pra direita no celular em pé) = Canvas Y (de cima pra baixo na assinatura)
+             // Toque Y (de cima pra baixo no celular em pé) = Canvas X (da direita pra esquerda?? Não, o topo é a esquerda)
+             
+             // Vamos simplificar usando a posição relativa ao viewport, já que o elemento ocupa 100vh/100vw
+             const xRaw = pos.x;
+             const yRaw = pos.y;
+             
+             // Largura e Altura VISUAIS do Canvas (que estão trocadas no CSS)
+             // No modo forçado: WidthCSS = 100vh (altura da tela), HeightCSS = 100vw (largura da tela)
+             
+             // Formula definitiva para rotação 90deg CW:
+             // CanvasX = Y_Tela
+             // CanvasY = Largura_Tela - X_Tela
+             
              return {
-                 x: pos.y, 
-                 y: window.innerWidth - pos.x
+                 x: yRaw,
+                 y: window.innerWidth - xRaw
              };
         }
     }
 
+    // Curvas Suaves (Quadratic Bézier)
     function startDraw(e) {
         if(e.type === 'touchstart') e.preventDefault();
         isDrawing=true; 
-        points.push(getCorrectPos(e));
+        const p = getCorrectPos(e);
+        points.push(p);
         document.getElementById('watermark').style.display = 'none';
+        
+        padCtx.beginPath();
+        padCtx.moveTo(p.x, p.y);
+        padCtx.lineTo(p.x, p.y); // Ponto inicial
+        padCtx.stroke();
     }
 
     function moveDraw(e) {
         if(!isDrawing) return;
         e.preventDefault();
-        points.push(getCorrectPos(e));
+        const p = getCorrectPos(e);
+        points.push(p);
+
         if(points.length < 3) return;
+        
+        const last = points[points.length-1];
+        const prev = points[points.length-2];
+        const prev2 = points[points.length-3]; // Control point
+
+        // Desenha curva suave entre os pontos
+        // Usa o ponto médio como controle para suavizar
+        const cpX = (prev.x + last.x) / 2;
+        const cpY = (prev.y + last.y) / 2;
+
         padCtx.beginPath();
-        padCtx.moveTo(points[points.length-2].x, points[points.length-2].y);
-        padCtx.lineTo(points[points.length-1].x, points[points.length-1].y);
+        padCtx.moveTo(prev.x, prev.y);
+        padCtx.quadraticCurveTo(cpX, cpY, last.x, last.y);
+        // Fallback simples para garantir que risca:
+        // padCtx.lineTo(p.x, p.y);
         padCtx.stroke();
     }
 
-    function endDraw() { isDrawing=false; points=[]; }
+    function endDraw() { isDrawing=false; points=[]; tempSignatureData = padCanvas.toDataURL(); }
 
-    // Listeners Pad MOUSE
     padCanvas.addEventListener('mousedown', startDraw);
     padCanvas.addEventListener('mousemove', moveDraw);
     padCanvas.addEventListener('mouseup', endDraw);
-
-    // Listeners Pad TOUCH
     padCanvas.addEventListener('touchstart', startDraw, {passive:false});
     padCanvas.addEventListener('touchmove', moveDraw, {passive:false});
     padCanvas.addEventListener('touchend', endDraw);
