@@ -3,8 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Assinador V18 - Matrix Fix</title>
+    <title>Assina Fácil</title>
     
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🖊️</text></svg>">
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
 
     <style>
@@ -25,13 +27,16 @@
             height: 60px; border-bottom: 1px solid #333; z-index: 20; flex-shrink: 0;
         }
 
-        .title { font-weight: 700; font-size: 16px; color: #fff; }
+        .title { font-weight: 700; font-size: 18px; color: #fff; letter-spacing: 0.5px; display: flex; align-items: center; gap: 8px;}
         .tools { display: flex; gap: 12px; }
+        
         .btn-icon {
             background: #2c2c2c; border: 1px solid #444; color: #eee;
             width: 40px; height: 40px; border-radius: 8px;
             font-size: 20px; display: flex; align-items: center; justify-content: center; cursor: pointer;
+            transition: background 0.2s;
         }
+        .btn-icon:active { background: #444; }
 
         /* WORKSPACE */
         #workspace {
@@ -56,15 +61,18 @@
             background: #2a2a2a; border: 2px dashed #555; color: #ddd;
             width: 85%; padding: 40px 20px; border-radius: 16px;
             text-align: center; margin-top: -60px; cursor: pointer;
+            transition: transform 0.1s, background 0.2s;
         }
+        .btn-big-open:active { background: #333; transform: scale(0.98); }
         .btn-big-open span { font-size: 45px; display: block; margin-bottom: 15px; }
-        .btn-big-open h3 { margin: 0; font-size: 20px; color: #fff; }
+        .btn-big-open h3 { margin: 0; font-size: 20px; color: #fff; font-weight: 600; }
         
         #instruction {
             position: absolute; top: 15px;
-            background: rgba(255, 193, 7, 0.95); color: #000;
+            background: rgba(0, 87, 255, 0.9); color: #fff;
             padding: 8px 20px; border-radius: 20px; font-weight: bold; font-size: 13px;
             pointer-events: none; display: none; z-index: 10;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
         }
         
         #loading { display: none; color: #aaa; margin-top: 20px; }
@@ -75,22 +83,25 @@
             background: var(--panel-bg); padding: 10px;
             padding-bottom: max(10px, env(safe-area-inset-bottom));
             display: flex; gap: 10px; border-top: 1px solid #333; z-index: 50;
+            height: auto;
         }
 
         .btn-action {
-            border: none; border-radius: 8px; flex: 1;
+            border: none; border-radius: 8px; padding: 0; flex: 1;
             font-size: 12px; font-weight: 700; text-transform: uppercase;
             color: white; display: flex; flex-direction: column; align-items: center; justify-content: center;
-            height: 50px; cursor: pointer;
+            height: 50px; cursor: pointer; transition: opacity 0.2s;
         }
-        .btn-open { background: #333; max-width: 80px; font-size: 10px; }
+        .btn-action:active { opacity: 0.7; }
+        
+        .btn-open { background: #333; border: 1px solid #555; max-width: 80px; font-size: 10px; }
         .btn-whats { background: #25D366; flex-grow: 2; opacity: 0.3; pointer-events: none; }
         .btn-save { background: #007bff; opacity: 0.3; pointer-events: none; }
         .active { opacity: 1 !important; pointer-events: auto !important; }
 
         input[type="file"] { display: none; }
 
-        /* --- MODAL (ENGINE V18) --- */
+        /* --- MODAL --- */
         .modal-overlay {
             position: fixed; top: 0; left: 0; 
             width: 100vw; height: 100dvh;
@@ -103,7 +114,7 @@
             width: 100%; height: 100%;
         }
 
-        /* CLASSE DE ROTAÇÃO FORÇADA (Portrait -> Landscape) */
+        /* LÓGICA DE ROTAÇÃO FORÇADA */
         .force-landscape {
             width: 100dvh !important;
             height: 100vw !important;
@@ -116,7 +127,7 @@
         }
 
         .modal-header { 
-            padding: 0 20px; background: #eee; color: #333; font-weight: bold; font-size: 14px;
+            padding: 0 20px; background: #f8f9fa; color: #333; font-weight: bold; font-size: 14px;
             display: flex; justify-content: space-between; align-items: center;
             height: 50px; flex-shrink: 0; border-bottom: 1px solid #ddd;
             padding-left: max(20px, env(safe-area-inset-left));
@@ -125,27 +136,29 @@
         #padContainer { 
             flex-grow: 1; width: 100%; position: relative; overflow: hidden;
             background-color: #fff;
-            background-image: radial-gradient(#ccc 1.5px, transparent 1.5px);
-            background-size: 20px 20px;
+            /* Papel pautado sutil */
+            background-image: linear-gradient(#e5e5e5 1px, transparent 1px);
+            background-size: 100% 40px;
             cursor: crosshair;
         }
         
         #padCanvas { width: 100%; height: 100%; display: block; touch-action: none; }
 
         .modal-footer { 
-            padding: 10px; background: #eee; display: flex; gap: 10px; 
+            padding: 10px; background: #f8f9fa; display: flex; gap: 10px; 
             height: 70px; align-items: center; flex-shrink: 0; border-top: 1px solid #ddd;
             padding-right: max(10px, env(safe-area-inset-right));
         }
         
-        .btn-m { height: 100%; flex: 1; border-radius: 8px; border: none; font-weight: bold; font-size: 14px; color: white; cursor: pointer; }
+        .btn-m { height: 100%; flex: 1; border-radius: 8px; border: none; font-weight: bold; font-size: 14px; color: white; cursor: pointer; transition: opacity 0.2s; }
+        .btn-m:active { opacity: 0.8; }
         .btn-cancel { background: #d9534f; max-width: 100px; }
         .btn-clear { background: #6c757d; max-width: 100px; }
         .btn-ok { background: #28a745; font-size: 16px; }
 
         #watermark {
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            color: #ddd; font-size: 5vh; font-weight: bold; pointer-events: none;
+            color: #e0e0e0; font-size: 5vh; font-weight: bold; pointer-events: none;
             text-transform: uppercase; user-select: none;
         }
 
@@ -153,13 +166,14 @@
             position: fixed; bottom: 50%; left: 50%; transform: translate(-50%, 50%);
             background: rgba(0,0,0,0.8); color: white; padding: 15px 30px;
             border-radius: 8px; font-weight: bold; z-index: 200; display: none;
+            text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.3);
         }
     </style>
 </head>
 <body>
 
 <header>
-    <div class="title">Assinador V18</div>
+    <div class="title">🖊️ Assina Fácil</div>
     <div class="tools">
         <div id="btnUndo" class="btn-icon" onclick="undoAction()" style="opacity:0.3;">↩</div>
         <div class="btn-icon" onclick="rotateImage(-90)">↺</div>
@@ -171,7 +185,7 @@
     <div id="startScreen">
         <label for="fileInput" class="btn-big-open">
             <span>📂</span>
-            <h3>ABRIR ARQUIVO</h3>
+            <h3>ABRIR DOCUMENTO</h3>
             <p>PDF ou Imagem</p>
         </label>
         <div id="loading">⌛ Carregando...</div>
@@ -193,12 +207,12 @@
 <div class="modal-overlay" id="modal">
     <div class="modal-content">
         <div class="modal-header">
-            <span>✍️ Tela Cheia</span>
-            <span onclick="closeModal()" style="font-size: 24px; padding: 0 10px; cursor: pointer;">✕</span>
+            <span>✍️ Assine na Linha</span>
+            <span onclick="closeModal()" style="font-size: 24px; padding: 0 10px; cursor: pointer; color:#666;">✕</span>
         </div>
 
         <div id="padContainer">
-            <div id="watermark">Assine Aqui</div>
+            <div id="watermark">Tela Cheia</div>
             <canvas id="padCanvas"></canvas>
         </div>
 
@@ -229,8 +243,9 @@
     let isSelecting = false;
     let startX, startY;
     
+    // VARIÁVEIS DE CONTROLE
     let isForcedLandscape = false;
-    let tempSignatureData = null; // Backup do desenho na rotação
+    let tempSignatureData = null;
 
     // --- ABRIR ARQUIVO ---
     document.getElementById('fileInput').addEventListener('change', async (e) => {
@@ -239,7 +254,7 @@
 
         const validTypes = ['application/pdf', 'image/png', 'image/jpeg', 'image/jpg', 'image/webp'];
         if (!validTypes.includes(file.type) && !file.name.toLowerCase().endsWith('.pdf')) {
-            showToast("⚠️ Arquivo inválido!"); return;
+            showToast("⚠️ Formato Inválido!"); return;
         }
 
         document.querySelector('.btn-big-open').style.display = 'none';
@@ -361,9 +376,9 @@
     mainCanvas.addEventListener('touchmove', moveSel, {passive:false});
     mainCanvas.addEventListener('touchend', endSel);
 
-    // --- ASSINATURA ---
+    // --- LÓGICA DE ASSINATURA ---
+    
     function checkOrientation() {
-        // Se altura > largura = Portrait = FORÇA ROTAÇÃO
         if(window.innerHeight > window.innerWidth) {
             modalContent.classList.add('force-landscape');
             isForcedLandscape = true;
@@ -376,16 +391,15 @@
     function openModal() {
         modal.style.display = 'flex';
         checkOrientation();
-        // Delay para DOM atualizar
         setTimeout(() => { resizePad(true); }, 50);
         window.addEventListener('resize', handleResize);
     }
 
     function handleResize() {
-        saveTempSignature(); // 1. Salva
-        checkOrientation();  // 2. Gira
-        resizePad(false);    // 3. Ajusta tamanho
-        restoreTempSignature(); // 4. Restaura
+        saveTempSignature();
+        checkOrientation();
+        resizePad(false);
+        restoreTempSignature();
     }
 
     function closeModal() {
@@ -411,7 +425,15 @@
         padCanvas.width = container.offsetWidth * ratio;
         padCanvas.height = container.offsetHeight * ratio;
         padCtx.scale(ratio, ratio);
-        padCtx.lineWidth = 4; padCtx.lineJoin = 'round'; padCtx.lineCap = 'round'; padCtx.strokeStyle = '#000000';
+        
+        // ESTILO CANETA AZUL REALISTA (BIC)
+        padCtx.lineWidth = 3.5; 
+        padCtx.lineJoin = 'round';
+        padCtx.lineCap = 'round';
+        padCtx.strokeStyle = '#0033cc'; // Azul Bic
+        padCtx.shadowBlur = 0.5; // Leve borrão de tinta
+        padCtx.shadowColor = '#0033cc';
+
         if(clean) clearPad();
     }
 
@@ -421,49 +443,22 @@
         document.getElementById('watermark').style.display = 'block'; 
     }
 
-    // --- CÁLCULO DE COORDENADAS MATRIX FIX ---
+    // --- COORDENADAS DO TOQUE ---
     let points = [], isDrawing = false;
 
     function getCorrectPos(e) {
         const pos = getClientPos(e);
         const r = padCanvas.getBoundingClientRect();
         
-        // Se estiver em Portrait Force Landscape
-        // O elemento visualmente está deitado, mas o rect retorna as coordenadas físicas da tela
-        // Como o CSS girou 90deg (sentido horário):
-        // Visual Top = Physical Left
-        // Visual Right = Physical Top
-        // Visual Bottom = Physical Right
-        // Visual Left = Physical Bottom
-        // Isso é confuso. Vamos usar a lógica de Map Range simplificada:
-        
         if(!isForcedLandscape) {
-             // Normal (Desktop / Celular Deitado)
-             // Precisamos multiplicar pelo Ratio interno (para alta resolução)
-             // A coordenada do evento é CSS pixels. A do canvas é interna.
-             // O ctx.scale(ratio, ratio) já lida com o desenho, mas precisamos da posição CSS local.
              return { x: pos.x - r.left, y: pos.y - r.top };
         } else {
-             // FORCED MODE
-             // No modo forçado, o 'rect' do canvas retorna o bounding box PÓS transformação na maioria dos browsers modernos.
-             // Mas a relação de eixos é trocada.
-             // O usuário arrasta horizontalmente (visualmente). Na tela física é verticalmente.
-             
-             // X Visual (assinatura) = Y Físico do Toque (ClientY) - Topo Físico do Canvas
-             // Y Visual (assinatura) = Largura Física do Canvas - (X Físico do Toque - Esq Física do Canvas)
-             
-             // Como r.left e r.top são as margens físicas:
+             // Mapeamento Inverso para Force Landscape (Celular em Pé)
              const physicalX = pos.x - r.left;
              const physicalY = pos.y - r.top;
-             
-             // O Canvas está girado 90 graus.
-             // O 0,0 do contexto está no canto superior direito físico (visual top-left).
-             // X Contexto corre para baixo fisicamente.
-             // Y Contexto corre para a esquerda fisicamente.
-             
              return {
                  x: physicalY,
-                 y: r.width - physicalX // Inverte eixo X físico para virar Y visual
+                 y: r.width - physicalX
              };
         }
     }
@@ -516,7 +511,7 @@
         mainCtx.drawImage(padCanvas, selectRect.x, selectRect.y, selectRect.w, selectRect.h);
         const i = new Image();
         i.src = mainCanvas.toDataURL('image/png', 1.0);
-        i.onload = () => { currentImage = i; renderMain(); showToast("Assinado!"); }
+        i.onload = () => { currentImage = i; renderMain(); showToast("Assinado com Sucesso!"); }
     }
 
     function undoAction() {
