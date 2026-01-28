@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Assinador V12 - Gerenciador</title>
+    <title>Assinador V15 - Force Landscape</title>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
 
     <style>
-        /* --- ESTILO GERAL --- */
+        /* --- CSS GERAL --- */
         * { box-sizing: border-box; touch-action: none; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; -webkit-tap-highlight-color: transparent; }
         
         body {
@@ -24,17 +24,14 @@
         }
 
         .title { font-weight: 700; font-size: 16px; color: #fff; }
-        
         .tools { display: flex; gap: 12px; }
         .btn-icon {
             background: #2c2c2c; border: 1px solid #444; color: #eee;
             width: 42px; height: 40px; border-radius: 8px;
             font-size: 20px; display: flex; align-items: center; justify-content: center;
         }
-        #btnUndo { color: #f0ad4e; opacity: 0.3; pointer-events: none; }
-        #btnUndo.active { opacity: 1; pointer-events: auto; background: rgba(240, 173, 78, 0.15); border-color: #f0ad4e; }
 
-        /* AREA DE TRABALHO */
+        /* WORKSPACE */
         #workspace {
             flex-grow: 1; position: relative; background: #000;
             display: flex; justify-content: center; align-items: center; overflow: hidden;
@@ -46,7 +43,7 @@
             box-shadow: 0 0 20px rgba(0,0,0,0.8); display: none; 
         }
 
-        /* TELA INICIAL (Call to Action) */
+        /* START SCREEN */
         #startScreen {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             display: flex; flex-direction: column; justify-content: center; align-items: center;
@@ -58,24 +55,20 @@
             width: 85%; padding: 40px 20px; border-radius: 16px;
             text-align: center; margin-top: -60px; transition: background 0.2s;
         }
-        .btn-big-open:active { background: #333; border-color: #777; }
         .btn-big-open span { font-size: 45px; display: block; margin-bottom: 15px; }
         .btn-big-open h3 { margin: 0; font-size: 20px; color: #fff; font-weight: 600; }
-        .btn-big-open p { margin: 8px 0 0 0; font-size: 13px; color: #888; }
-
-        /* Instrução */
+        
         #instruction {
             position: absolute; top: 15px;
             background: rgba(255, 193, 7, 0.95); color: #000;
             padding: 8px 20px; border-radius: 20px; font-weight: bold; font-size: 13px;
             box-shadow: 0 4px 10px rgba(0,0,0,0.5); pointer-events: none;
-            display: none; z-index: 10; animation: float 2s infinite ease-in-out;
+            display: none; z-index: 10;
         }
-        @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-5px)} }
         
         #loading { display: none; color: #aaa; font-size: 14px; margin-top: 20px; }
 
-        /* MENU FIXO */
+        /* ACTION BAR */
         .action-bar {
             position: fixed; bottom: 0; left: 0; width: 100%;
             background: #1e1e1e; padding: 12px;
@@ -89,47 +82,89 @@
             color: white; display: flex; flex-direction: column; align-items: center; justify-content: center;
             height: 54px;
         }
-        
         .btn-open { background: #333; border: 1px solid #555; max-width: 80px; font-size: 10px; }
-        .btn-open span { font-size: 20px; margin-bottom: 2px; }
-        
         .btn-whats { background: #25D366; flex-grow: 2; opacity: 0.3; pointer-events: none; }
         .btn-save { background: #007bff; opacity: 0.3; pointer-events: none; }
         .active { opacity: 1 !important; pointer-events: auto !important; }
 
-        /* O INPUT SECRETO - Aceita TUDO para garantir que o gerenciador abra */
         input[type="file"] { display: none; }
 
-        /* MODAL */
+        /* --- MODAL COM ROTAÇÃO FORÇADA --- */
         .modal-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: #121212; z-index: 100; display: none; flex-direction: column;
+            position: fixed; 
+            top: 0; left: 0; 
+            width: 100vw; height: 100vh;
+            background: #f5f5f5; 
+            z-index: 9999;
+            display: none; 
+            flex-direction: column;
+            overflow: hidden;
         }
-        .modal-header { padding: 15px; background: #222; text-align: center; color: #fff; font-weight: bold; padding-top: max(15px, env(safe-area-inset-top)); }
-        #padContainer { flex-grow: 1; background: #fff; width: 100%; overflow: hidden; position: relative; }
-        #padCanvas { width: 100%; height: 100%; display: block; }
-        .modal-footer { padding: 15px; background: #222; display: flex; gap: 10px; padding-bottom: max(15px, env(safe-area-inset-bottom)); }
-        .btn-m { padding: 15px; flex: 1; border-radius: 8px; border: none; font-weight: bold; font-size: 16px; color: white; }
-        .btn-cancel { background: #d9534f; }
-        .btn-clear { background: #555; }
-        .btn-ok { background: #28a745; }
 
-        /* TOAST */
-        #toast {
-            position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%);
-            background: rgba(220, 53, 69, 0.9); color: white; padding: 12px 24px;
-            border-radius: 30px; font-weight: 600; font-size: 14px; text-align: center; width: 80%;
-            display: none; z-index: 200; box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+        /* Classe Mágica: Força Paisagem mesmo com celular em pé */
+        .force-landscape {
+            width: 100vh !important; /* Altura vira largura */
+            height: 100vw !important; /* Largura vira altura */
+            transform: rotate(90deg);
+            transform-origin: center;
+            /* Centraliza após girar */
+            position: fixed;
+            top: 50%; left: 50%;
+            margin-left: -50vh; /* Metade da nova largura */
+            margin-top: -50vw;  /* Metade da nova altura */
         }
-        #toast.success { background: rgba(40, 167, 69, 0.9); }
+
+        .modal-header { 
+            padding: 10px; background: #fff; text-align: center; color: #333; font-weight: bold; 
+            font-size: 14px; border-bottom: 1px solid #ddd;
+            display: flex; justify-content: space-between; align-items: center; padding-left: 20px; padding-right: 20px;
+            height: 50px; flex-shrink: 0;
+        }
+
+        #padContainer { 
+            flex-grow: 1; width: 100%; position: relative; overflow: hidden;
+            background-color: #fff;
+            background-image: radial-gradient(#ccc 1.5px, transparent 1.5px);
+            background-size: 20px 20px;
+        }
+        
+        #watermark {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            color: #e0e0e0; font-size: 5vh; font-weight: bold; pointer-events: none;
+            text-transform: uppercase; text-align: center;
+        }
+
+        #baseline {
+            position: absolute; bottom: 20%; left: 5%; width: 90%; height: 2px;
+            border-bottom: 2px dashed #ddd; pointer-events: none;
+        }
+
+        #padCanvas { width: 100%; height: 100%; display: block; }
+
+        .modal-footer { 
+            padding: 10px; background: #fff; display: flex; gap: 10px; 
+            border-top: 1px solid #ddd;
+            height: 70px; align-items: center; flex-shrink: 0;
+        }
+        
+        .btn-m { height: 45px; flex: 1; border-radius: 8px; border: none; font-weight: bold; font-size: 14px; color: white; }
+        .btn-cancel { background: #d9534f; max-width: 100px; }
+        .btn-clear { background: #6c757d; max-width: 100px; }
+        .btn-ok { background: #28a745; font-size: 16px; }
+
+        #toast {
+            position: fixed; bottom: 50%; left: 50%; transform: translate(-50%, 50%);
+            background: rgba(0,0,0,0.8); color: white; padding: 15px 30px;
+            border-radius: 8px; font-weight: bold; z-index: 200; display: none;
+        }
     </style>
 </head>
 <body>
 
 <header>
-    <div class="title">Assinador V12</div>
+    <div class="title">Assinador V15</div>
     <div class="tools">
-        <div id="btnUndo" class="btn-icon" onclick="undoAction()">↩</div>
+        <div id="btnUndo" class="btn-icon" onclick="undoAction()" style="opacity:0.3;">↩</div>
         <div class="btn-icon" onclick="rotateImage(-90)">↺</div>
         <div class="btn-icon" onclick="rotateImage(90)">↻</div>
     </div>
@@ -140,112 +175,92 @@
         <label for="fileInput" class="btn-big-open">
             <span>📂</span>
             <h3>ABRIR ARQUIVO</h3>
-            <p>PDF, Imagem, Downloads...</p>
+            <p>PDF ou Imagem</p>
         </label>
-        <div id="loading">⌛ Processando arquivo...</div>
+        <div id="loading">⌛ Processando...</div>
     </div>
 
-    <div id="instruction">👆 Arraste na imagem para assinar</div>
+    <div id="instruction">👆 Selecione onde quer assinar</div>
     <canvas id="mainCanvas"></canvas>
 </div>
 
 <div class="action-bar">
-    <label for="fileInput" class="btn-action btn-open">
-        <span>📂</span> Abrir
-    </label>
-    
+    <label for="fileInput" class="btn-action btn-open"><span>📂</span>Abrir</label>
     <input type="file" id="fileInput" accept="*/*">
-
-    <div id="btnWhats" class="btn-action btn-whats" onclick="shareDoc()">
-        Enviar<br>WhatsApp
-    </div>
-    
-    <div id="btnSave" class="btn-action btn-save" onclick="downloadDoc()">
-        Baixar
-    </div>
+    <div id="btnWhats" class="btn-action btn-whats" onclick="shareDoc()">Enviar Whats</div>
+    <div id="btnSave" class="btn-action btn-save" onclick="downloadDoc()">Baixar</div>
 </div>
 
-<div id="toast">Erro</div>
+<div id="toast">Sucesso!</div>
 
 <div class="modal-overlay" id="modal">
-    <div class="modal-header">Assine com o dedo</div>
+    <div class="modal-header">
+        <span>✍️ Assinatura Horizontal</span>
+        <span onclick="closeModal()" style="font-size: 20px; padding: 5px; cursor: pointer;">✕</span>
+    </div>
+
     <div id="padContainer">
+        <div id="watermark">Assine na Tela Inteira</div>
+        <div id="baseline"></div>
         <canvas id="padCanvas"></canvas>
     </div>
+
     <div class="modal-footer">
         <button class="btn-m btn-cancel" onclick="closeModal()">Cancelar</button>
         <button class="btn-m btn-clear" onclick="clearPad()">Limpar</button>
-        <button class="btn-m btn-ok" onclick="applySignature()">✔ OK</button>
+        <button class="btn-m btn-ok" onclick="applySignature()">✔ CONFIRMAR</button>
     </div>
 </div>
 
 <script>
     pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
 
+    // ELEMENTOS
     const mainCanvas = document.getElementById('mainCanvas');
     const mainCtx = mainCanvas.getContext('2d');
     const padCanvas = document.getElementById('padCanvas');
     const padCtx = padCanvas.getContext('2d');
-    
-    const startScreen = document.getElementById('startScreen');
-    const loading = document.getElementById('loading');
-    const instruction = document.getElementById('instruction');
-    const btnWhats = document.getElementById('btnWhats');
-    const btnSave = document.getElementById('btnSave');
-    const btnUndo = document.getElementById('btnUndo');
     const modal = document.getElementById('modal');
     
+    // ESTADO
     let currentImage = null;
     let currentRotation = 0;
     let historyStack = [];
+    let selectRect = null;
     let isSelecting = false;
-    let startX, startY, selectRect = null;
+    let startX, startY;
+    let isForcedLandscape = false; // Flag crucial
 
-    // --- 1. ABRIR (Com Validação de Segurança) ---
+    // --- ABRIR ---
     document.getElementById('fileInput').addEventListener('change', async (e) => {
         const file = e.target.files[0];
         if(!file) return;
 
-        console.log("Arquivo:", file.type); // Debug
-
-        // VALIDAÇÃO MANUAL: Já que abrimos a "porteira" (*/*), precisamos filtrar aqui
-        const validTypes = ['application/pdf', 'image/png', 'image/jpeg', 'image/jpg', 'image/webp', 'image/bmp'];
-        
-        // Verifica se é tipo válido OU se a extensão termina com .pdf (backup)
+        const validTypes = ['application/pdf', 'image/png', 'image/jpeg', 'image/jpg', 'image/webp'];
         if (!validTypes.includes(file.type) && !file.name.toLowerCase().endsWith('.pdf')) {
-            showToast("⚠️ Formato inválido! Escolha PDF ou Imagem.", false);
-            return;
+            showToast("⚠️ Arquivo inválido!"); return;
         }
 
-        // UI Reset
         document.querySelector('.btn-big-open').style.display = 'none';
-        loading.style.display = 'block';
+        document.getElementById('loading').style.display = 'block';
         mainCanvas.style.display = 'none';
-        instruction.style.display = 'none';
         
-        btnWhats.classList.remove('active');
-        btnSave.classList.remove('active');
-        historyStack = [];
-        currentRotation = 0;
+        document.getElementById('btnWhats').classList.remove('active');
+        document.getElementById('btnSave').classList.remove('active');
+        historyStack = []; currentRotation = 0;
 
         try {
-            if(file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
-                await handlePDF(file);
-            } else {
-                await handleImage(file);
-            }
-        } catch (err) {
-            alert("Erro ao ler arquivo: " + err.message);
-            location.reload();
-        }
+            if(file.type.includes('pdf') || file.name.endsWith('.pdf')) await handlePDF(file);
+            else await handleImage(file);
+        } catch(err) { alert("Erro: " + err.message); location.reload(); }
     });
 
     function handleImage(file) {
-        return new Promise((resolve) => {
+        return new Promise(r => {
             const reader = new FileReader();
             reader.onload = (e) => {
                 const img = new Image();
-                img.onload = () => { currentImage = img; finishLoad(); resolve(); };
+                img.onload = () => { currentImage = img; finishLoad(); r(); };
                 img.src = e.target.result;
             };
             reader.readAsDataURL(file);
@@ -253,28 +268,27 @@
     }
 
     async function handlePDF(file) {
-        const arrayBuffer = await file.arrayBuffer();
-        const pdf = await pdfjsLib.getDocument(arrayBuffer).promise;
+        const d = await file.arrayBuffer();
+        const pdf = await pdfjsLib.getDocument(d).promise;
         const page = await pdf.getPage(1);
-        const viewport = page.getViewport({scale: 2.5}); // HD
-        const tempCanvas = document.createElement('canvas');
-        tempCanvas.width = viewport.width;
-        tempCanvas.height = viewport.height;
-        await page.render({canvasContext: tempCanvas.getContext('2d'), viewport: viewport}).promise;
-
+        const viewport = page.getViewport({scale: 2.5});
+        const c = document.createElement('canvas');
+        c.width = viewport.width; c.height = viewport.height;
+        await page.render({canvasContext:c.getContext('2d'), viewport}).promise;
+        
         const img = new Image();
-        img.src = tempCanvas.toDataURL('image/jpeg', 0.9);
+        img.src = c.toDataURL('image/jpeg', 0.9);
         await new Promise(r => img.onload = r);
         currentImage = img;
         finishLoad();
     }
 
     function finishLoad() {
-        startScreen.style.display = 'none';
+        document.getElementById('startScreen').style.display = 'none';
         mainCanvas.style.display = 'block';
-        instruction.style.display = 'block';
-        btnWhats.classList.add('active');
-        btnSave.classList.add('active');
+        document.getElementById('instruction').style.display = 'block';
+        document.getElementById('btnWhats').classList.add('active');
+        document.getElementById('btnSave').classList.add('active');
         renderMain();
     }
 
@@ -283,7 +297,6 @@
         if(!currentImage) return;
         currentRotation = (currentRotation + deg) % 360;
         renderMain();
-        showToast("Imagem Girada", true);
     }
 
     function renderMain() {
@@ -292,7 +305,7 @@
         mainCanvas.height = isVert ? currentImage.width : currentImage.height;
 
         mainCtx.save();
-        mainCtx.clearRect(0, 0, mainCanvas.width, mainCanvas.height);
+        mainCtx.clearRect(0,0,mainCanvas.width, mainCanvas.height);
         mainCtx.translate(mainCanvas.width/2, mainCanvas.height/2);
         mainCtx.rotate(currentRotation * Math.PI / 180);
         mainCtx.drawImage(currentImage, -currentImage.width/2, -currentImage.height/2);
@@ -302,142 +315,253 @@
     // --- SELEÇÃO ---
     function getCanvasPos(e) {
         const rect = mainCanvas.getBoundingClientRect();
-        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-        const scaleX = mainCanvas.width / rect.width;
-        const scaleY = mainCanvas.height / rect.height;
-        return { x: (clientX - rect.left) * scaleX, y: (clientY - rect.top) * scaleY };
+        const t = e.touches ? e.touches[0] : e;
+        const sx = mainCanvas.width / rect.width;
+        const sy = mainCanvas.height / rect.height;
+        return { x: (t.clientX - rect.left) * sx, y: (t.clientY - rect.top) * sy };
     }
 
-    mainCanvas.addEventListener('touchstart', startSel, {passive:false});
-    mainCanvas.addEventListener('touchmove', moveSel, {passive:false});
-    mainCanvas.addEventListener('touchend', endSel);
+    mainCanvas.addEventListener('touchstart', (e)=>{ e.preventDefault(); isSelecting=true; document.getElementById('instruction').style.display='none'; const p = getCanvasPos(e); startX=p.x; startY=p.y; }, {passive:false});
     
-    let tempX, tempY;
-
-    function startSel(e) {
-        if(!currentImage) return;
-        e.preventDefault();
-        isSelecting = true;
-        instruction.style.display = 'none';
-        const p = getCanvasPos(e);
-        startX = p.x; startY = p.y;
-    }
-
-    function moveSel(e) {
-        if(!isSelecting) return;
-        e.preventDefault();
-        const p = getCanvasPos(e);
-        tempX = p.x; tempY = p.y;
+    let lastX, lastY;
+    mainCanvas.addEventListener('touchmove', (e)=>{ 
+        if(!isSelecting) return; e.preventDefault(); 
+        const p=getCanvasPos(e); lastX = p.x; lastY = p.y;
         renderMain();
-        mainCtx.beginPath();
-        mainCtx.lineWidth = 5 * (mainCanvas.width / 1000);
-        mainCtx.strokeStyle = "#007bff";
-        mainCtx.setLineDash([15 * (mainCanvas.width / 1000)]);
-        mainCtx.strokeRect(startX, startY, tempX-startX, tempY-startY);
+        mainCtx.lineWidth = 4 * (mainCanvas.width/1000);
+        mainCtx.strokeStyle = "#007bff"; mainCtx.setLineDash([10]);
+        mainCtx.strokeRect(startX, startY, p.x-startX, p.y-startY);
         mainCtx.fillStyle = "rgba(0,123,255,0.2)";
-        mainCtx.fillRect(startX, startY, tempX-startX, tempY-startY);
-    }
+        mainCtx.fillRect(startX, startY, p.x-startX, p.y-startY);
+    }, {passive:false});
+    
+    mainCanvas.addEventListener('touchend', ()=>{
+        isSelecting=false;
+        const w = lastX - startX; const h = lastY - startY;
+        if(Math.abs(w) > 20 && Math.abs(h) > 20) {
+            selectRect = {x: startX, y: startY, w, h};
+            openModal();
+        } else { renderMain(); }
+    });
 
-    function endSel(e) {
-        if(!isSelecting) return;
-        isSelecting = false;
-        const w = tempX - startX;
-        const h = tempY - startY;
-        if(Math.abs(w) < mainCanvas.width * 0.05 || Math.abs(h) < mainCanvas.height * 0.02) { renderMain(); return; }
-        selectRect = {x: startX, y: startY, w: w, h: h};
-        openModal();
-    }
+    // --- ASSINATURA FORCE LANDSCAPE ---
+    let points = [], isDrawing = false;
 
-    // --- ASSINATURA ---
-    let points = [];
-    let isDrawing = false;
-
-    function openModal() {
-        modal.style.display = 'flex';
-        const container = document.getElementById('padContainer');
-        const ratio = Math.max(window.devicePixelRatio || 1, 1);
-        padCanvas.width = container.offsetWidth * ratio;
-        padCanvas.height = container.offsetHeight * ratio;
-        padCtx.scale(ratio, ratio);
-        padCtx.lineWidth = 3;
-        padCtx.lineJoin = 'round';
-        padCtx.lineCap = 'round';
-        padCtx.strokeStyle = 'blue';
-        clearPad();
-    }
-
-    function closeModal() { modal.style.display = 'none'; renderMain(); }
-    function clearPad() { padCtx.clearRect(0,0, padCanvas.width, padCanvas.height); points = []; }
-
-    padCanvas.addEventListener('touchstart', startDraw, {passive:false});
-    padCanvas.addEventListener('touchmove', moveDraw, {passive:false});
-    padCanvas.addEventListener('touchend', endDraw);
-
-    function getPadPos(e) {
-        const rect = padCanvas.getBoundingClientRect();
-        return { x: e.touches[0].clientX - rect.left, y: e.touches[0].clientY - rect.top };
-    }
-
-    function startDraw(e) { isDrawing = true; points.push(getPadPos(e)); }
-    function moveDraw(e) { if(!isDrawing) return; e.preventDefault(); points.push(getPadPos(e)); drawCurve(); }
-    function endDraw() { isDrawing = false; points = []; }
-    function drawCurve() {
-        if (points.length < 3) return;
-        padCtx.beginPath();
-        padCtx.moveTo(points[points.length - 2].x, points[points.length - 2].y);
-        padCtx.lineTo(points[points.length - 1].x, points[points.length - 1].y);
-        padCtx.stroke();
-    }
-
-    function applySignature() {
-        saveUndo();
-        modal.style.display = 'none';
-        renderMain();
-        mainCtx.drawImage(padCanvas, selectRect.x, selectRect.y, selectRect.w, selectRect.h);
-        const newImg = new Image();
-        newImg.src = mainCanvas.toDataURL('image/png', 1.0);
-        newImg.onload = () => { currentImage = newImg; renderMain(); showToast("Assinado com Sucesso!", true); }
-    }
-
-    function saveUndo() {
-        if(currentImage) {
-            historyStack.push(currentImage.src);
-            btnUndo.classList.add('active');
+    function checkOrientation() {
+        // Se a tela for mais alta que larga = Portrait (Vertical) -> Precisa girar
+        if(window.innerHeight > window.innerWidth) {
+            modal.classList.add('force-landscape');
+            isForcedLandscape = true;
+        } else {
+            modal.classList.remove('force-landscape');
+            isForcedLandscape = false;
         }
     }
 
-    function undoAction() {
-        if(historyStack.length === 0) return;
-        const src = historyStack.pop();
-        if(historyStack.length === 0) btnUndo.classList.remove('active');
-        const img = new Image();
-        img.src = src;
-        img.onload = () => { currentImage = img; renderMain(); showToast("Desfeito", true); }
+    function openModal() {
+        modal.style.display = 'flex';
+        checkOrientation(); // Verifica e aplica a rotação se necessário
+        
+        // Timeout para garantir que o CSS aplicou a rotação antes de calcular tamanho
+        setTimeout(() => {
+            resizePad();
+            clearPad();
+        }, 50);
+        
+        window.addEventListener('resize', handleResize);
     }
 
-    function showToast(text, isSuccess) {
-        const t = document.getElementById('toast');
-        t.innerText = text;
-        t.className = isSuccess ? 'success' : '';
-        t.style.display = 'block';
-        setTimeout(() => t.style.display = 'none', 3000);
+    function handleResize() {
+        checkOrientation();
+        resizePad();
+    }
+
+    function closeModal() {
+        modal.style.display = 'none';
+        modal.classList.remove('force-landscape'); // Reseta
+        window.removeEventListener('resize', handleResize);
+        renderMain();
+    }
+
+    function resizePad() {
+        const container = document.getElementById('padContainer');
+        const ratio = Math.max(window.devicePixelRatio || 1, 1);
+        
+        // O tamanho interno do canvas deve corresponder ao tamanho visual
+        // Se estiver rotacionado (force-landscape), width visual é height da tela
+        // Mas o .offsetWidth pega o tamanho real do elemento DOM, que já está trocado pelo CSS?
+        // Sim, se girarmos, o browser recalcula o layout dentro do elemento girado.
+        
+        padCanvas.width = container.offsetWidth * ratio;
+        padCanvas.height = container.offsetHeight * ratio;
+        padCtx.scale(ratio, ratio);
+        
+        padCtx.lineWidth = 3;
+        padCtx.lineJoin = 'round';
+        padCtx.lineCap = 'round';
+        padCtx.strokeStyle = '#000080';
+    }
+
+    function clearPad() { 
+        padCtx.clearRect(0,0,padCanvas.width,padCanvas.height); 
+        points=[]; document.getElementById('watermark').style.display = 'block'; 
+    }
+
+    // MATEMÁTICA DE TOQUE CORRIGIDA
+    function getPadPos(e) {
+        const r = padCanvas.getBoundingClientRect();
+        const t = e.touches ? e.touches[0] : e;
+        
+        let clientX = t.clientX;
+        let clientY = t.clientY;
+
+        // SE ESTIVER ROTACIONADO NA MARRA
+        // A mágica: getBoundingClientRect já retorna as coordenadas da caixa girada!
+        // Então clientX - left DEVE funcionar se o browser for moderno.
+        // O problema é o eixo local.
+        
+        // Teste de lógica: Se girou 90deg, o topo virou direita.
+        // Vamos confiar no offset simples primeiro, pois 'padCanvas' é filho do container girado.
+        // Se o evento é capturado no canvas, o offset deve ser local.
+        
+        // No entanto, touch event retorna global (screen).
+        
+        if (isForcedLandscape) {
+            // Se forçado, precisamos mapear as coordenadas da tela para o canvas girado
+            // O CSS girou o centro.
+            // X da tela -> Y do canvas (invertido ou não?)
+            // Y da tela -> X do canvas
+            
+            // Vamos usar uma abordagem mais robusta: Map Range
+            // Como o elemento ocupa 100% da dimensão trocada:
+            
+            // Normaliza X e Y da tela (0 a 1)
+            const normX = clientX / window.innerWidth;
+            const normY = clientY / window.innerHeight;
+            
+            // No modo forçado (90deg), o topo do canvas está na esquerda da tela.
+            // O canvas X vai de 0 a W (que é a altura da tela)
+            // O canvas Y vai de 0 a H (que é a largura da tela)
+            
+            // Tela Y (topo->baixo) = Canvas X (Esq->Dir)
+            // Tela X (esq->dir) = Canvas Y (Baixo->Topo? Não, Topo->Baixo é direita)
+            // Se girou 90deg CW: Topo visual é a direita da tela original.
+            
+            // Vamos simplificar:
+            // Canvas X = clientY
+            // Canvas Y = (window.innerWidth - clientX)
+            
+            // Ajuste fino para DPI
+            // Precisamos multiplicar pela proporção interna do canvas
+            const cssW = padCanvas.offsetWidth;
+            const cssH = padCanvas.offsetHeight;
+            
+            return {
+                x: clientY - r.top, 
+                y: (r.right - clientX) // Aproximação clássica de 90deg
+                // Se ficar espelhado, trocamos aqui.
+                // Mas espere! Se usarmos r.top e r.left do bounding box, já temos a posição na tela.
+            };
+            
+            // CORREÇÃO SEGURA V15:
+            // Não vamos tentar adivinhar a matriz de rotação.
+            // O Canvas desenha em coordenadas locais.
+            // Se o usuário arrasta o dedo "para a direita" (no mundo real),
+            // ele está arrastando "para baixo" na tela do celular.
+            // O CSS girou o canvas.
+            // O usuário vê o canvas de pé.
+            // Se ele arrasta da esq pra direita (mundo real), ele arrasta no Eixo X do canvas.
+            // Na tela do celular, isso é Eixo Y (cima para baixo).
+            
+            return {
+                x: clientY, // Movimento vertical da tela vira horizontal do canvas
+                y: (window.innerWidth - clientX) // Movimento horizontal da tela vira vertical invertido
+            };
+        }
+        
+        return { x: clientX - r.left, y: clientY - r.top };
+    }
+    
+    // Sobrescrevendo a função para garantir compatibilidade
+    // Para simplificar a vida do usuário e evitar bugs de matemática de matrizes no "Force Mode",
+    // vamos usar uma lógica relativa:
+    
+    function getCorrectPos(e) {
+        if(!isForcedLandscape) {
+             const r = padCanvas.getBoundingClientRect();
+             const t = e.touches ? e.touches[0] : e;
+             return { x: t.clientX - r.left, y: t.clientY - r.top };
+        } else {
+             // Lógica Force Landscape (Celular em pé, Tela deitada)
+             // O usuário segura o celular deitado.
+             // O topo do celular é a "Esquerda".
+             // O botão home é a "Direita".
+             
+             // Touch X (Eixo menor do celular) vira Y do desenho.
+             // Touch Y (Eixo maior do celular) vira X do desenho.
+             
+             const t = e.touches ? e.touches[0] : e;
+             // Ajuste manual fino baseado em testes de rotação CSS
+             return {
+                 x: t.clientY, 
+                 y: window.innerWidth - t.clientX
+             };
+        }
+    }
+
+    padCanvas.addEventListener('touchstart', (e)=>{ 
+        e.preventDefault(); isDrawing=true; points.push(getCorrectPos(e));
+        document.getElementById('watermark').style.display = 'none';
+    }, {passive:false});
+    
+    padCanvas.addEventListener('touchmove', (e)=>{ 
+        if(!isDrawing) return; e.preventDefault(); points.push(getCorrectPos(e));
+        if(points.length < 3) return;
+        padCtx.beginPath();
+        padCtx.moveTo(points[points.length-2].x, points[points.length-2].y);
+        padCtx.lineTo(points[points.length-1].x, points[points.length-1].y);
+        padCtx.stroke();
+    }, {passive:false});
+    
+    padCanvas.addEventListener('touchend', ()=>{ isDrawing=false; points=[]; });
+
+    // --- FINALIZAR ---
+    function applySignature() {
+        if(currentImage) { historyStack.push(currentImage.src); document.getElementById('btnUndo').style.opacity=1; document.getElementById('btnUndo').style.pointerEvents='auto'; }
+        
+        closeModal();
+        renderMain();
+        mainCtx.drawImage(padCanvas, selectRect.x, selectRect.y, selectRect.w, selectRect.h);
+        
+        const i = new Image();
+        i.src = mainCanvas.toDataURL('image/png', 1.0);
+        i.onload = () => { currentImage = i; renderMain(); showToast("Assinado!"); }
+    }
+
+    function undoAction() {
+        if(!historyStack.length) return;
+        const src = historyStack.pop();
+        if(!historyStack.length) { document.getElementById('btnUndo').style.opacity=0.3; document.getElementById('btnUndo').style.pointerEvents='none'; }
+        const i = new Image(); i.src = src; i.onload = () => { currentImage=i; renderMain(); showToast("Desfeito"); }
+    }
+
+    function showToast(msg) {
+        const t = document.getElementById('toast'); t.innerText=msg; t.style.display='block';
+        setTimeout(()=>t.style.display='none', 2000);
     }
 
     async function shareDoc() {
         if(!currentImage) return;
-        mainCanvas.toBlob(async (blob) => {
-            const file = new File([blob], "Doc_Assinado.png", { type: "image/png" });
-            try { await navigator.share({ files: [file] }); } catch (e) {}
+        mainCanvas.toBlob(async (b) => {
+            const f = new File([b], "Assinado.png", {type: "image/png"});
+            try { await navigator.share({files:[f]}); } catch(e){}
         });
     }
 
     function downloadDoc() {
         if(!currentImage) return;
-        const link = document.createElement('a');
-        link.download = `Doc_${Date.now()}.png`;
-        link.href = mainCanvas.toDataURL('image/png', 1.0);
-        link.click();
+        const a = document.createElement('a'); a.download = `Doc_${Date.now()}.png`;
+        a.href = mainCanvas.toDataURL(); a.click();
     }
 </script>
 </body>
