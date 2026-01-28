@@ -3,36 +3,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Assinador Mobile V11</title>
+    <title>Assinador V12 - Gerenciador</title>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
 
     <style>
-        /* --- ESTILO MOBILE FIRST --- */
+        /* --- ESTILO GERAL --- */
         * { box-sizing: border-box; touch-action: none; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; -webkit-tap-highlight-color: transparent; }
         
         body {
-            margin: 0;
-            background-color: #121212;
-            color: #eee;
-            display: flex;
-            flex-direction: column;
-            /* 100dvh ajusta automaticamente para barras de navegador mobile */
-            height: 100dvh; 
-            overflow: hidden;
+            margin: 0; background-color: #121212; color: #eee;
+            display: flex; flex-direction: column; height: 100dvh; overflow: hidden;
         }
 
         /* HEADER */
         header {
-            background: #1e1e1e;
-            padding: 10px 15px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            height: 60px;
-            border-bottom: 1px solid #333;
-            flex-shrink: 0; /* Impede de encolher */
-            z-index: 20;
+            background: #1e1e1e; padding: 10px 15px;
+            display: flex; justify-content: space-between; align-items: center;
+            height: 60px; border-bottom: 1px solid #333; z-index: 20;
         }
 
         .title { font-weight: 700; font-size: 16px; color: #fff; }
@@ -48,107 +36,79 @@
 
         /* AREA DE TRABALHO */
         #workspace {
-            flex-grow: 1;
-            position: relative;
-            background: #000;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            overflow: hidden;
-            /* Espaço extra embaixo para o menu não cobrir a imagem */
+            flex-grow: 1; position: relative; background: #000;
+            display: flex; justify-content: center; align-items: center; overflow: hidden;
             padding-bottom: 90px; 
         }
 
         #mainCanvas {
-            max-width: 98%;
-            max-height: 98%;
-            box-shadow: 0 0 20px rgba(0,0,0,0.8);
-            display: none; 
+            max-width: 98%; max-height: 98%;
+            box-shadow: 0 0 20px rgba(0,0,0,0.8); display: none; 
         }
 
-        /* Dica Flutuante */
+        /* TELA INICIAL (Call to Action) */
+        #startScreen {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            background: #121212; z-index: 5;
+        }
+        
+        .btn-big-open {
+            background: #2a2a2a; border: 2px dashed #555; color: #ddd;
+            width: 85%; padding: 40px 20px; border-radius: 16px;
+            text-align: center; margin-top: -60px; transition: background 0.2s;
+        }
+        .btn-big-open:active { background: #333; border-color: #777; }
+        .btn-big-open span { font-size: 45px; display: block; margin-bottom: 15px; }
+        .btn-big-open h3 { margin: 0; font-size: 20px; color: #fff; font-weight: 600; }
+        .btn-big-open p { margin: 8px 0 0 0; font-size: 13px; color: #888; }
+
+        /* Instrução */
         #instruction {
             position: absolute; top: 15px;
             background: rgba(255, 193, 7, 0.95); color: #000;
             padding: 8px 20px; border-radius: 20px; font-weight: bold; font-size: 13px;
             box-shadow: 0 4px 10px rgba(0,0,0,0.5); pointer-events: none;
-            display: none; z-index: 10;
-            animation: float 2s infinite ease-in-out;
+            display: none; z-index: 10; animation: float 2s infinite ease-in-out;
         }
         @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-5px)} }
-
-        /* TELA INICIAL (Call to Action Gigante) */
-        #startScreen {
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            display: flex; flex-direction: column; justify-content: center; align-items: center;
-            background: #121212; z-index: 5;
-        }
         
-        /* Botão Central Gigante */
-        .btn-big-open {
-            background: #333; border: 2px dashed #666; color: #ddd;
-            width: 80%; padding: 40px 20px; border-radius: 15px;
-            text-align: center; margin-top: -50px;
-        }
-        .btn-big-open span { font-size: 40px; display: block; margin-bottom: 10px; }
-        .btn-big-open h3 { margin: 0; font-size: 18px; color: #fff; }
-        .btn-big-open p { margin: 5px 0 0 0; font-size: 12px; color: #888; }
+        #loading { display: none; color: #aaa; font-size: 14px; margin-top: 20px; }
 
-        #loading { display: none; color: #aaa; font-size: 14px; }
-
-        /* MENU FIXO EMBAIXO */
+        /* MENU FIXO */
         .action-bar {
-            position: fixed; /* O segredo do Mobile */
-            bottom: 0; left: 0; width: 100%;
-            background: #1e1e1e;
-            padding: 12px;
-            /* Respeita a área segura do iPhone (Home Bar) */
+            position: fixed; bottom: 0; left: 0; width: 100%;
+            background: #1e1e1e; padding: 12px;
             padding-bottom: max(12px, env(safe-area-inset-bottom));
-            display: flex; gap: 10px;
-            border-top: 1px solid #333;
-            z-index: 50;
-            box-shadow: 0 -5px 20px rgba(0,0,0,0.5);
+            display: flex; gap: 10px; border-top: 1px solid #333; z-index: 50;
         }
 
         .btn-action {
-            border: none; border-radius: 8px;
-            padding: 12px; flex: 1;
+            border: none; border-radius: 8px; padding: 10px; flex: 1;
             font-size: 12px; font-weight: 700; text-transform: uppercase;
             color: white; display: flex; flex-direction: column; align-items: center; justify-content: center;
-            height: 50px;
+            height: 54px;
         }
-
-        .btn-open { background: #333; border: 1px solid #555; max-width: 70px; font-size: 10px; }
-        .btn-open span { font-size: 18px; margin-bottom: 2px; }
+        
+        .btn-open { background: #333; border: 1px solid #555; max-width: 80px; font-size: 10px; }
+        .btn-open span { font-size: 20px; margin-bottom: 2px; }
         
         .btn-whats { background: #25D366; flex-grow: 2; opacity: 0.3; pointer-events: none; }
         .btn-save { background: #007bff; opacity: 0.3; pointer-events: none; }
-        
         .active { opacity: 1 !important; pointer-events: auto !important; }
 
+        /* O INPUT SECRETO - Aceita TUDO para garantir que o gerenciador abra */
         input[type="file"] { display: none; }
 
         /* MODAL */
         .modal-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: #121212; z-index: 100;
-            display: none; flex-direction: column;
+            background: #121212; z-index: 100; display: none; flex-direction: column;
         }
-        .modal-header { 
-            padding: 15px; background: #222; text-align: center; color: #fff; font-weight: bold; 
-            padding-top: max(15px, env(safe-area-inset-top)); /* Safe area topo */
-        }
-        
-        #padContainer {
-            flex-grow: 1; background: #fff; width: 100%; overflow: hidden; position: relative;
-        }
+        .modal-header { padding: 15px; background: #222; text-align: center; color: #fff; font-weight: bold; padding-top: max(15px, env(safe-area-inset-top)); }
+        #padContainer { flex-grow: 1; background: #fff; width: 100%; overflow: hidden; position: relative; }
         #padCanvas { width: 100%; height: 100%; display: block; }
-
-        .modal-footer { 
-            padding: 15px; background: #222; display: flex; gap: 10px; 
-            padding-bottom: max(15px, env(safe-area-inset-bottom));
-        }
+        .modal-footer { padding: 15px; background: #222; display: flex; gap: 10px; padding-bottom: max(15px, env(safe-area-inset-bottom)); }
         .btn-m { padding: 15px; flex: 1; border-radius: 8px; border: none; font-weight: bold; font-size: 16px; color: white; }
         .btn-cancel { background: #d9534f; }
         .btn-clear { background: #555; }
@@ -157,16 +117,17 @@
         /* TOAST */
         #toast {
             position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%);
-            background: rgba(0,0,0,0.85); color: white; padding: 12px 24px;
-            border-radius: 30px; font-weight: 600; font-size: 14px;
-            display: none; z-index: 200; backdrop-filter: blur(4px); text-align: center; width: 80%;
+            background: rgba(220, 53, 69, 0.9); color: white; padding: 12px 24px;
+            border-radius: 30px; font-weight: 600; font-size: 14px; text-align: center; width: 80%;
+            display: none; z-index: 200; box-shadow: 0 5px 15px rgba(0,0,0,0.5);
         }
+        #toast.success { background: rgba(40, 167, 69, 0.9); }
     </style>
 </head>
 <body>
 
 <header>
-    <div class="title">Assinador Mobile</div>
+    <div class="title">Assinador V12</div>
     <div class="tools">
         <div id="btnUndo" class="btn-icon" onclick="undoAction()">↩</div>
         <div class="btn-icon" onclick="rotateImage(-90)">↺</div>
@@ -178,23 +139,22 @@
     <div id="startScreen">
         <label for="fileInput" class="btn-big-open">
             <span>📂</span>
-            <h3>TOQUE PARA ABRIR</h3>
-            <p>PDF ou Imagem</p>
+            <h3>ABRIR ARQUIVO</h3>
+            <p>PDF, Imagem, Downloads...</p>
         </label>
-        <div id="loading">⌛ Processando em HD...</div>
+        <div id="loading">⌛ Processando arquivo...</div>
     </div>
 
     <div id="instruction">👆 Arraste na imagem para assinar</div>
-    
     <canvas id="mainCanvas"></canvas>
 </div>
 
 <div class="action-bar">
     <label for="fileInput" class="btn-action btn-open">
-        <span>📂</span>
-        Abrir
+        <span>📂</span> Abrir
     </label>
-    <input type="file" id="fileInput" accept="image/*, application/pdf">
+    
+    <input type="file" id="fileInput" accept="*/*">
 
     <div id="btnWhats" class="btn-action btn-whats" onclick="shareDoc()">
         Enviar<br>WhatsApp
@@ -205,7 +165,7 @@
     </div>
 </div>
 
-<div id="toast">Pronto!</div>
+<div id="toast">Erro</div>
 
 <div class="modal-overlay" id="modal">
     <div class="modal-header">Assine com o dedo</div>
@@ -227,7 +187,6 @@
     const padCanvas = document.getElementById('padCanvas');
     const padCtx = padCanvas.getContext('2d');
     
-    // Elementos UI
     const startScreen = document.getElementById('startScreen');
     const loading = document.getElementById('loading');
     const instruction = document.getElementById('instruction');
@@ -240,34 +199,43 @@
     let currentRotation = 0;
     let historyStack = [];
     let isSelecting = false;
-    let startX, startY;
-    let selectRect = null;
+    let startX, startY, selectRect = null;
 
-    // --- ABRIR ARQUIVO ---
+    // --- 1. ABRIR (Com Validação de Segurança) ---
     document.getElementById('fileInput').addEventListener('change', async (e) => {
         const file = e.target.files[0];
         if(!file) return;
 
+        console.log("Arquivo:", file.type); // Debug
+
+        // VALIDAÇÃO MANUAL: Já que abrimos a "porteira" (*/*), precisamos filtrar aqui
+        const validTypes = ['application/pdf', 'image/png', 'image/jpeg', 'image/jpg', 'image/webp', 'image/bmp'];
+        
+        // Verifica se é tipo válido OU se a extensão termina com .pdf (backup)
+        if (!validTypes.includes(file.type) && !file.name.toLowerCase().endsWith('.pdf')) {
+            showToast("⚠️ Formato inválido! Escolha PDF ou Imagem.", false);
+            return;
+        }
+
         // UI Reset
-        document.querySelector('.btn-big-open').style.display = 'none'; // Some o botão grande
-        loading.style.display = 'block'; // Mostra loading
+        document.querySelector('.btn-big-open').style.display = 'none';
+        loading.style.display = 'block';
         mainCanvas.style.display = 'none';
         instruction.style.display = 'none';
         
         btnWhats.classList.remove('active');
         btnSave.classList.remove('active');
-        btnUndo.classList.remove('active');
         historyStack = [];
         currentRotation = 0;
 
         try {
-            if(file.type === 'application/pdf') {
+            if(file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
                 await handlePDF(file);
             } else {
                 await handleImage(file);
             }
         } catch (err) {
-            alert("Erro: " + err.message);
+            alert("Erro ao ler arquivo: " + err.message);
             location.reload();
         }
     });
@@ -288,7 +256,7 @@
         const arrayBuffer = await file.arrayBuffer();
         const pdf = await pdfjsLib.getDocument(arrayBuffer).promise;
         const page = await pdf.getPage(1);
-        const viewport = page.getViewport({scale: 2.5}); // HD Quality
+        const viewport = page.getViewport({scale: 2.5}); // HD
         const tempCanvas = document.createElement('canvas');
         tempCanvas.width = viewport.width;
         tempCanvas.height = viewport.height;
@@ -302,10 +270,9 @@
     }
 
     function finishLoad() {
-        startScreen.style.display = 'none'; // Some a tela inicial toda
+        startScreen.style.display = 'none';
         mainCanvas.style.display = 'block';
         instruction.style.display = 'block';
-        
         btnWhats.classList.add('active');
         btnSave.classList.add('active');
         renderMain();
@@ -316,7 +283,7 @@
         if(!currentImage) return;
         currentRotation = (currentRotation + deg) % 360;
         renderMain();
-        showToast("Imagem Girada");
+        showToast("Imagem Girada", true);
     }
 
     function renderMain() {
@@ -337,14 +304,9 @@
         const rect = mainCanvas.getBoundingClientRect();
         const clientX = e.touches ? e.touches[0].clientX : e.clientX;
         const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-        
         const scaleX = mainCanvas.width / rect.width;
         const scaleY = mainCanvas.height / rect.height;
-        
-        return {
-            x: (clientX - rect.left) * scaleX,
-            y: (clientY - rect.top) * scaleY
-        };
+        return { x: (clientX - rect.left) * scaleX, y: (clientY - rect.top) * scaleY };
     }
 
     mainCanvas.addEventListener('touchstart', startSel, {passive:false});
@@ -367,7 +329,6 @@
         e.preventDefault();
         const p = getCanvasPos(e);
         tempX = p.x; tempY = p.y;
-
         renderMain();
         mainCtx.beginPath();
         mainCtx.lineWidth = 5 * (mainCanvas.width / 1000);
@@ -383,44 +344,31 @@
         isSelecting = false;
         const w = tempX - startX;
         const h = tempY - startY;
-        
-        if(Math.abs(w) < mainCanvas.width * 0.05 || Math.abs(h) < mainCanvas.height * 0.02) {
-            renderMain(); return;
-        }
+        if(Math.abs(w) < mainCanvas.width * 0.05 || Math.abs(h) < mainCanvas.height * 0.02) { renderMain(); return; }
         selectRect = {x: startX, y: startY, w: w, h: h};
         openModal();
     }
 
-    // --- ASSINATURA HD ---
+    // --- ASSINATURA ---
     let points = [];
     let isDrawing = false;
 
     function openModal() {
         modal.style.display = 'flex';
         const container = document.getElementById('padContainer');
-        // Corrige DPI
         const ratio = Math.max(window.devicePixelRatio || 1, 1);
         padCanvas.width = container.offsetWidth * ratio;
         padCanvas.height = container.offsetHeight * ratio;
         padCtx.scale(ratio, ratio);
-        
         padCtx.lineWidth = 3;
         padCtx.lineJoin = 'round';
         padCtx.lineCap = 'round';
         padCtx.strokeStyle = 'blue';
-        
         clearPad();
     }
 
-    function closeModal() {
-        modal.style.display = 'none';
-        renderMain();
-    }
-    
-    function clearPad() {
-        padCtx.clearRect(0,0, padCanvas.width, padCanvas.height);
-        points = [];
-    }
+    function closeModal() { modal.style.display = 'none'; renderMain(); }
+    function clearPad() { padCtx.clearRect(0,0, padCanvas.width, padCanvas.height); points = []; }
 
     padCanvas.addEventListener('touchstart', startDraw, {passive:false});
     padCanvas.addEventListener('touchmove', moveDraw, {passive:false});
@@ -428,26 +376,12 @@
 
     function getPadPos(e) {
         const rect = padCanvas.getBoundingClientRect();
-        return { 
-            x: e.touches[0].clientX - rect.left, 
-            y: e.touches[0].clientY - rect.top 
-        };
+        return { x: e.touches[0].clientX - rect.left, y: e.touches[0].clientY - rect.top };
     }
 
-    function startDraw(e) {
-        isDrawing = true;
-        points.push(getPadPos(e));
-    }
-
-    function moveDraw(e) {
-        if(!isDrawing) return;
-        e.preventDefault();
-        points.push(getPadPos(e));
-        drawCurve();
-    }
-
+    function startDraw(e) { isDrawing = true; points.push(getPadPos(e)); }
+    function moveDraw(e) { if(!isDrawing) return; e.preventDefault(); points.push(getPadPos(e)); drawCurve(); }
     function endDraw() { isDrawing = false; points = []; }
-
     function drawCurve() {
         if (points.length < 3) return;
         padCtx.beginPath();
@@ -456,20 +390,14 @@
         padCtx.stroke();
     }
 
-    // --- FINALIZAR ---
     function applySignature() {
         saveUndo();
         modal.style.display = 'none';
         renderMain();
         mainCtx.drawImage(padCanvas, selectRect.x, selectRect.y, selectRect.w, selectRect.h);
-
         const newImg = new Image();
         newImg.src = mainCanvas.toDataURL('image/png', 1.0);
-        newImg.onload = () => {
-            currentImage = newImg;
-            renderMain();
-            showToast("Assinatura Aplicada!");
-        }
+        newImg.onload = () => { currentImage = newImg; renderMain(); showToast("Assinado com Sucesso!", true); }
     }
 
     function saveUndo() {
@@ -485,14 +413,15 @@
         if(historyStack.length === 0) btnUndo.classList.remove('active');
         const img = new Image();
         img.src = src;
-        img.onload = () => { currentImage = img; renderMain(); showToast("Desfeito"); }
+        img.onload = () => { currentImage = img; renderMain(); showToast("Desfeito", true); }
     }
 
-    function showToast(text) {
+    function showToast(text, isSuccess) {
         const t = document.getElementById('toast');
         t.innerText = text;
+        t.className = isSuccess ? 'success' : '';
         t.style.display = 'block';
-        setTimeout(() => t.style.display = 'none', 2000);
+        setTimeout(() => t.style.display = 'none', 3000);
     }
 
     async function shareDoc() {
