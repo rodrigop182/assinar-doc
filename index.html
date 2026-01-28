@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Assinador V15 - Force Landscape</title>
+    <title>Assinador V16 - Híbrido</title>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
 
     <style>
-        /* --- CSS GERAL --- */
+        /* --- CSS IGUAL AO ANTERIOR (Mantendo o Dark Mode Pro) --- */
         * { box-sizing: border-box; touch-action: none; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; -webkit-tap-highlight-color: transparent; }
         
         body {
@@ -28,14 +28,15 @@
         .btn-icon {
             background: #2c2c2c; border: 1px solid #444; color: #eee;
             width: 42px; height: 40px; border-radius: 8px;
-            font-size: 20px; display: flex; align-items: center; justify-content: center;
+            font-size: 20px; display: flex; align-items: center; justify-content: center; cursor: pointer;
         }
+        .btn-icon:hover { background: #444; }
 
         /* WORKSPACE */
         #workspace {
             flex-grow: 1; position: relative; background: #000;
             display: flex; justify-content: center; align-items: center; overflow: hidden;
-            padding-bottom: 90px; 
+            padding-bottom: 90px; cursor: crosshair;
         }
 
         #mainCanvas {
@@ -53,8 +54,9 @@
         .btn-big-open {
             background: #2a2a2a; border: 2px dashed #555; color: #ddd;
             width: 85%; padding: 40px 20px; border-radius: 16px;
-            text-align: center; margin-top: -60px; transition: background 0.2s;
+            text-align: center; margin-top: -60px; transition: background 0.2s; cursor: pointer;
         }
+        .btn-big-open:hover { background: #333; }
         .btn-big-open span { font-size: 45px; display: block; margin-bottom: 15px; }
         .btn-big-open h3 { margin: 0; font-size: 20px; color: #fff; font-weight: 600; }
         
@@ -80,7 +82,7 @@
             border: none; border-radius: 8px; padding: 10px; flex: 1;
             font-size: 12px; font-weight: 700; text-transform: uppercase;
             color: white; display: flex; flex-direction: column; align-items: center; justify-content: center;
-            height: 54px;
+            height: 54px; cursor: pointer;
         }
         .btn-open { background: #333; border: 1px solid #555; max-width: 80px; font-size: 10px; }
         .btn-whats { background: #25D366; flex-grow: 2; opacity: 0.3; pointer-events: none; }
@@ -89,29 +91,23 @@
 
         input[type="file"] { display: none; }
 
-        /* --- MODAL COM ROTAÇÃO FORÇADA --- */
+        /* --- MODAL (Force Landscape Mobile) --- */
         .modal-overlay {
-            position: fixed; 
-            top: 0; left: 0; 
-            width: 100vw; height: 100vh;
-            background: #f5f5f5; 
-            z-index: 9999;
-            display: none; 
-            flex-direction: column;
-            overflow: hidden;
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: #f5f5f5; z-index: 9999;
+            display: none; flex-direction: column; overflow: hidden;
         }
 
-        /* Classe Mágica: Força Paisagem mesmo com celular em pé */
+        /* Se for celular em pé, força a rotação. Se for desktop, ignora. */
         .force-landscape {
-            width: 100vh !important; /* Altura vira largura */
-            height: 100vw !important; /* Largura vira altura */
+            width: 100vh !important;
+            height: 100vw !important;
             transform: rotate(90deg);
             transform-origin: center;
-            /* Centraliza após girar */
             position: fixed;
             top: 50%; left: 50%;
-            margin-left: -50vh; /* Metade da nova largura */
-            margin-top: -50vw;  /* Metade da nova altura */
+            margin-left: -50vh;
+            margin-top: -50vw;
         }
 
         .modal-header { 
@@ -139,15 +135,14 @@
             border-bottom: 2px dashed #ddd; pointer-events: none;
         }
 
-        #padCanvas { width: 100%; height: 100%; display: block; }
+        #padCanvas { width: 100%; height: 100%; display: block; cursor: crosshair; }
 
         .modal-footer { 
             padding: 10px; background: #fff; display: flex; gap: 10px; 
-            border-top: 1px solid #ddd;
-            height: 70px; align-items: center; flex-shrink: 0;
+            border-top: 1px solid #ddd; height: 70px; align-items: center; flex-shrink: 0;
         }
         
-        .btn-m { height: 45px; flex: 1; border-radius: 8px; border: none; font-weight: bold; font-size: 14px; color: white; }
+        .btn-m { height: 45px; flex: 1; border-radius: 8px; border: none; font-weight: bold; font-size: 14px; color: white; cursor: pointer; }
         .btn-cancel { background: #d9534f; max-width: 100px; }
         .btn-clear { background: #6c757d; max-width: 100px; }
         .btn-ok { background: #28a745; font-size: 16px; }
@@ -162,7 +157,7 @@
 <body>
 
 <header>
-    <div class="title">Assinador V15</div>
+    <div class="title">Assinador V16</div>
     <div class="tools">
         <div id="btnUndo" class="btn-icon" onclick="undoAction()" style="opacity:0.3;">↩</div>
         <div class="btn-icon" onclick="rotateImage(-90)">↺</div>
@@ -195,7 +190,7 @@
 
 <div class="modal-overlay" id="modal">
     <div class="modal-header">
-        <span>✍️ Assinatura Horizontal</span>
+        <span>✍️ Assinatura</span>
         <span onclick="closeModal()" style="font-size: 20px; padding: 5px; cursor: pointer;">✕</span>
     </div>
 
@@ -229,7 +224,7 @@
     let selectRect = null;
     let isSelecting = false;
     let startX, startY;
-    let isForcedLandscape = false; // Flag crucial
+    let isForcedLandscape = false;
 
     // --- ABRIR ---
     document.getElementById('fileInput').addEventListener('change', async (e) => {
@@ -312,43 +307,78 @@
         mainCtx.restore();
     }
 
-    // --- SELEÇÃO ---
-    function getCanvasPos(e) {
-        const rect = mainCanvas.getBoundingClientRect();
-        const t = e.touches ? e.touches[0] : e;
-        const sx = mainCanvas.width / rect.width;
-        const sy = mainCanvas.height / rect.height;
-        return { x: (t.clientX - rect.left) * sx, y: (t.clientY - rect.top) * sy };
+    // --- SELEÇÃO HÍBRIDA (MOUSE + TOUCH) ---
+    // Helper para unificar coordenadas de mouse e touch
+    function getClientPos(e) {
+        if(e.touches && e.touches.length > 0) {
+            return { x: e.touches[0].clientX, y: e.touches[0].clientY };
+        }
+        return { x: e.clientX, y: e.clientY };
     }
 
-    mainCanvas.addEventListener('touchstart', (e)=>{ e.preventDefault(); isSelecting=true; document.getElementById('instruction').style.display='none'; const p = getCanvasPos(e); startX=p.x; startY=p.y; }, {passive:false});
-    
-    let lastX, lastY;
-    mainCanvas.addEventListener('touchmove', (e)=>{ 
-        if(!isSelecting) return; e.preventDefault(); 
-        const p=getCanvasPos(e); lastX = p.x; lastY = p.y;
-        renderMain();
+    function getCanvasPos(e) {
+        const rect = mainCanvas.getBoundingClientRect();
+        const pos = getClientPos(e);
+        const sx = mainCanvas.width / rect.width;
+        const sy = mainCanvas.height / rect.height;
+        return { x: (pos.x - rect.left) * sx, y: (pos.y - rect.top) * sy };
+    }
+
+    // Unificação de listeners
+    function startSel(e) {
+        if(!currentImage) return;
+        if(e.type === 'touchstart') e.preventDefault(); // Evita scroll no mobile
+        
+        isSelecting = true;
+        document.getElementById('instruction').style.display='none';
+        const p = getCanvasPos(e);
+        startX = p.x; startY = p.y;
+    }
+
+    function moveSel(e) {
+        if(!isSelecting) return;
+        e.preventDefault();
+        
+        const p = getCanvasPos(e);
+        renderMain(); // Limpa
         mainCtx.lineWidth = 4 * (mainCanvas.width/1000);
-        mainCtx.strokeStyle = "#007bff"; mainCtx.setLineDash([10]);
+        mainCtx.strokeStyle = "#007bff";
+        mainCtx.setLineDash([10]);
         mainCtx.strokeRect(startX, startY, p.x-startX, p.y-startY);
         mainCtx.fillStyle = "rgba(0,123,255,0.2)";
         mainCtx.fillRect(startX, startY, p.x-startX, p.y-startY);
-    }, {passive:false});
-    
-    mainCanvas.addEventListener('touchend', ()=>{
-        isSelecting=false;
-        const w = lastX - startX; const h = lastY - startY;
-        if(Math.abs(w) > 20 && Math.abs(h) > 20) {
-            selectRect = {x: startX, y: startY, w, h};
-            openModal();
-        } else { renderMain(); }
-    });
+        
+        // Guarda ultima posição para o 'touchend' que não tem coordenadas
+        selectRect = { x: startX, y: startY, w: p.x - startX, h: p.y - startY };
+    }
 
-    // --- ASSINATURA FORCE LANDSCAPE ---
+    function endSel(e) {
+        if(!isSelecting) return;
+        isSelecting = false;
+        
+        // Verifica se formou um retangulo válido (maior que 20px)
+        if(selectRect && Math.abs(selectRect.w) > 20 && Math.abs(selectRect.h) > 20) {
+            openModal();
+        } else {
+            renderMain(); // Limpa sujeira de clique acidental
+        }
+    }
+
+    // Adiciona Listeners MOUSE
+    mainCanvas.addEventListener('mousedown', startSel);
+    mainCanvas.addEventListener('mousemove', moveSel);
+    mainCanvas.addEventListener('mouseup', endSel);
+
+    // Adiciona Listeners TOUCH
+    mainCanvas.addEventListener('touchstart', startSel, {passive:false});
+    mainCanvas.addEventListener('touchmove', moveSel, {passive:false});
+    mainCanvas.addEventListener('touchend', endSel);
+
+
+    // --- ASSINATURA ---
     let points = [], isDrawing = false;
 
     function checkOrientation() {
-        // Se a tela for mais alta que larga = Portrait (Vertical) -> Precisa girar
         if(window.innerHeight > window.innerWidth) {
             modal.classList.add('force-landscape');
             isForcedLandscape = true;
@@ -360,25 +390,16 @@
 
     function openModal() {
         modal.style.display = 'flex';
-        checkOrientation(); // Verifica e aplica a rotação se necessário
-        
-        // Timeout para garantir que o CSS aplicou a rotação antes de calcular tamanho
-        setTimeout(() => {
-            resizePad();
-            clearPad();
-        }, 50);
-        
+        checkOrientation();
+        setTimeout(() => { resizePad(); clearPad(); }, 50);
         window.addEventListener('resize', handleResize);
     }
 
-    function handleResize() {
-        checkOrientation();
-        resizePad();
-    }
+    function handleResize() { checkOrientation(); resizePad(); }
 
     function closeModal() {
         modal.style.display = 'none';
-        modal.classList.remove('force-landscape'); // Reseta
+        modal.classList.remove('force-landscape');
         window.removeEventListener('resize', handleResize);
         renderMain();
     }
@@ -386,20 +407,10 @@
     function resizePad() {
         const container = document.getElementById('padContainer');
         const ratio = Math.max(window.devicePixelRatio || 1, 1);
-        
-        // O tamanho interno do canvas deve corresponder ao tamanho visual
-        // Se estiver rotacionado (force-landscape), width visual é height da tela
-        // Mas o .offsetWidth pega o tamanho real do elemento DOM, que já está trocado pelo CSS?
-        // Sim, se girarmos, o browser recalcula o layout dentro do elemento girado.
-        
         padCanvas.width = container.offsetWidth * ratio;
         padCanvas.height = container.offsetHeight * ratio;
         padCtx.scale(ratio, ratio);
-        
-        padCtx.lineWidth = 3;
-        padCtx.lineJoin = 'round';
-        padCtx.lineCap = 'round';
-        padCtx.strokeStyle = '#000080';
+        padCtx.lineWidth = 3; padCtx.lineJoin = 'round'; padCtx.lineCap = 'round'; padCtx.strokeStyle = '#000080';
     }
 
     function clearPad() { 
@@ -407,132 +418,58 @@
         points=[]; document.getElementById('watermark').style.display = 'block'; 
     }
 
-    // MATEMÁTICA DE TOQUE CORRIGIDA
-    function getPadPos(e) {
-        const r = padCanvas.getBoundingClientRect();
-        const t = e.touches ? e.touches[0] : e;
-        
-        let clientX = t.clientX;
-        let clientY = t.clientY;
-
-        // SE ESTIVER ROTACIONADO NA MARRA
-        // A mágica: getBoundingClientRect já retorna as coordenadas da caixa girada!
-        // Então clientX - left DEVE funcionar se o browser for moderno.
-        // O problema é o eixo local.
-        
-        // Teste de lógica: Se girou 90deg, o topo virou direita.
-        // Vamos confiar no offset simples primeiro, pois 'padCanvas' é filho do container girado.
-        // Se o evento é capturado no canvas, o offset deve ser local.
-        
-        // No entanto, touch event retorna global (screen).
-        
-        if (isForcedLandscape) {
-            // Se forçado, precisamos mapear as coordenadas da tela para o canvas girado
-            // O CSS girou o centro.
-            // X da tela -> Y do canvas (invertido ou não?)
-            // Y da tela -> X do canvas
-            
-            // Vamos usar uma abordagem mais robusta: Map Range
-            // Como o elemento ocupa 100% da dimensão trocada:
-            
-            // Normaliza X e Y da tela (0 a 1)
-            const normX = clientX / window.innerWidth;
-            const normY = clientY / window.innerHeight;
-            
-            // No modo forçado (90deg), o topo do canvas está na esquerda da tela.
-            // O canvas X vai de 0 a W (que é a altura da tela)
-            // O canvas Y vai de 0 a H (que é a largura da tela)
-            
-            // Tela Y (topo->baixo) = Canvas X (Esq->Dir)
-            // Tela X (esq->dir) = Canvas Y (Baixo->Topo? Não, Topo->Baixo é direita)
-            // Se girou 90deg CW: Topo visual é a direita da tela original.
-            
-            // Vamos simplificar:
-            // Canvas X = clientY
-            // Canvas Y = (window.innerWidth - clientX)
-            
-            // Ajuste fino para DPI
-            // Precisamos multiplicar pela proporção interna do canvas
-            const cssW = padCanvas.offsetWidth;
-            const cssH = padCanvas.offsetHeight;
-            
-            return {
-                x: clientY - r.top, 
-                y: (r.right - clientX) // Aproximação clássica de 90deg
-                // Se ficar espelhado, trocamos aqui.
-                // Mas espere! Se usarmos r.top e r.left do bounding box, já temos a posição na tela.
-            };
-            
-            // CORREÇÃO SEGURA V15:
-            // Não vamos tentar adivinhar a matriz de rotação.
-            // O Canvas desenha em coordenadas locais.
-            // Se o usuário arrasta o dedo "para a direita" (no mundo real),
-            // ele está arrastando "para baixo" na tela do celular.
-            // O CSS girou o canvas.
-            // O usuário vê o canvas de pé.
-            // Se ele arrasta da esq pra direita (mundo real), ele arrasta no Eixo X do canvas.
-            // Na tela do celular, isso é Eixo Y (cima para baixo).
-            
-            return {
-                x: clientY, // Movimento vertical da tela vira horizontal do canvas
-                y: (window.innerWidth - clientX) // Movimento horizontal da tela vira vertical invertido
-            };
-        }
-        
-        return { x: clientX - r.left, y: clientY - r.top };
-    }
-    
-    // Sobrescrevendo a função para garantir compatibilidade
-    // Para simplificar a vida do usuário e evitar bugs de matemática de matrizes no "Force Mode",
-    // vamos usar uma lógica relativa:
-    
+    // Coordenadas Corretas (Híbrido Mouse/Touch + Force Landscape)
     function getCorrectPos(e) {
+        const pos = getClientPos(e); // Pega X/Y brutos da tela (Mouse ou Touch)
+        
         if(!isForcedLandscape) {
              const r = padCanvas.getBoundingClientRect();
-             const t = e.touches ? e.touches[0] : e;
-             return { x: t.clientX - r.left, y: t.clientY - r.top };
+             return { x: pos.x - r.left, y: pos.y - r.top };
         } else {
-             // Lógica Force Landscape (Celular em pé, Tela deitada)
-             // O usuário segura o celular deitado.
-             // O topo do celular é a "Esquerda".
-             // O botão home é a "Direita".
-             
-             // Touch X (Eixo menor do celular) vira Y do desenho.
-             // Touch Y (Eixo maior do celular) vira X do desenho.
-             
-             const t = e.touches ? e.touches[0] : e;
-             // Ajuste manual fino baseado em testes de rotação CSS
+             // Lógica Force Landscape (Gira coordenadas 90 graus)
              return {
-                 x: t.clientY, 
-                 y: window.innerWidth - t.clientX
+                 x: pos.y, 
+                 y: window.innerWidth - pos.x
              };
         }
     }
 
-    padCanvas.addEventListener('touchstart', (e)=>{ 
-        e.preventDefault(); isDrawing=true; points.push(getCorrectPos(e));
+    function startDraw(e) {
+        if(e.type === 'touchstart') e.preventDefault();
+        isDrawing=true; 
+        points.push(getCorrectPos(e));
         document.getElementById('watermark').style.display = 'none';
-    }, {passive:false});
-    
-    padCanvas.addEventListener('touchmove', (e)=>{ 
-        if(!isDrawing) return; e.preventDefault(); points.push(getCorrectPos(e));
+    }
+
+    function moveDraw(e) {
+        if(!isDrawing) return;
+        e.preventDefault();
+        points.push(getCorrectPos(e));
         if(points.length < 3) return;
         padCtx.beginPath();
         padCtx.moveTo(points[points.length-2].x, points[points.length-2].y);
         padCtx.lineTo(points[points.length-1].x, points[points.length-1].y);
         padCtx.stroke();
-    }, {passive:false});
-    
-    padCanvas.addEventListener('touchend', ()=>{ isDrawing=false; points=[]; });
+    }
+
+    function endDraw() { isDrawing=false; points=[]; }
+
+    // Listeners Pad MOUSE
+    padCanvas.addEventListener('mousedown', startDraw);
+    padCanvas.addEventListener('mousemove', moveDraw);
+    padCanvas.addEventListener('mouseup', endDraw);
+
+    // Listeners Pad TOUCH
+    padCanvas.addEventListener('touchstart', startDraw, {passive:false});
+    padCanvas.addEventListener('touchmove', moveDraw, {passive:false});
+    padCanvas.addEventListener('touchend', endDraw);
 
     // --- FINALIZAR ---
     function applySignature() {
         if(currentImage) { historyStack.push(currentImage.src); document.getElementById('btnUndo').style.opacity=1; document.getElementById('btnUndo').style.pointerEvents='auto'; }
-        
         closeModal();
         renderMain();
         mainCtx.drawImage(padCanvas, selectRect.x, selectRect.y, selectRect.w, selectRect.h);
-        
         const i = new Image();
         i.src = mainCanvas.toDataURL('image/png', 1.0);
         i.onload = () => { currentImage = i; renderMain(); showToast("Assinado!"); }
