@@ -9,8 +9,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
 
     <style>
-        /* --- CSS --- */
-        :root { --app-bg: #121212; --panel-bg: #1e1e1e; }
+        /* --- CSS CORE --- */
+        :root { --app-bg: #121212; --panel-bg: #1e1e1e; --primary: #007bff; }
         
         * { box-sizing: border-box; touch-action: none; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; -webkit-tap-highlight-color: transparent; }
         
@@ -92,6 +92,7 @@
             height: 50px; cursor: pointer; transition: opacity 0.2s;
         }
         .btn-action:active { opacity: 0.7; }
+        
         .btn-open { background: #333; border: 1px solid #555; max-width: 80px; font-size: 10px; }
         .btn-whats { background: #25D366; flex-grow: 2; opacity: 0.3; pointer-events: none; }
         .btn-save { background: #007bff; opacity: 0.3; pointer-events: none; }
@@ -99,11 +100,11 @@
 
         input[type="file"] { display: none; }
 
-        /* --- MODAL (ENGINE V20 - Proportional) --- */
+        /* --- MODAL (ENGINE V22) --- */
         .modal-overlay {
             position: fixed; top: 0; left: 0; 
             width: 100vw; height: 100dvh;
-            background: #222; /* Fundo escuro para destacar o papel */
+            background: #222; /* Fundo escuro */
             z-index: 9999;
             display: none; overflow: hidden;
         }
@@ -131,23 +132,23 @@
             padding-left: max(20px, env(safe-area-inset-left));
         }
 
-        /* Container que centraliza o papel */
+        /* Container Pad (Ocupa tudo) */
         #padContainer { 
             flex-grow: 1; width: 100%; position: relative; overflow: hidden;
-            background-color: #333; /* Mesa escura */
-            display: flex; justify-content: center; align-items: center; /* Centraliza a folha */
-            padding: 20px;
+            background-color: #333;
+            display: flex; justify-content: center; align-items: center;
+            padding: 10px;
         }
         
-        /* O Canvas agora tem tamanho visual definido via JS para manter proporção */
         #padCanvas { 
             background-color: #fff;
             background-image: linear-gradient(#e5e5e5 1px, transparent 1px);
-            background-size: 100% 40px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5); /* Sombra de papel flutuando */
+            background-size: 100% 50px; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
             cursor: crosshair;
             display: block;
             touch-action: none;
+            width: 100%; height: 100%; /* Força ocupar espaço disponível */
         }
 
         .modal-footer { 
@@ -166,6 +167,12 @@
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
             color: #ddd; font-size: 1.5rem; font-weight: bold; pointer-events: none;
             text-transform: uppercase; user-select: none; z-index: 5; white-space: nowrap;
+        }
+        
+        /* Linha Guia */
+        #baseline {
+            position: absolute; top: 60%; left: 5%; width: 90%; height: 2px;
+            border-bottom: 2px dashed #007bff; opacity: 0.3; pointer-events: none;
         }
 
         #toast {
@@ -213,12 +220,13 @@
 <div class="modal-overlay" id="modal">
     <div class="modal-content">
         <div class="modal-header">
-            <span>✍️ Assine no Papel</span>
+            <span>✍️ Assinatura Livre</span>
             <span onclick="closeModal()" style="font-size: 24px; padding: 0 10px; cursor: pointer; color:#666;">✕</span>
         </div>
 
         <div id="padContainer">
-            <div id="watermark">Assine Aqui</div>
+            <div id="watermark">Área Expandida</div>
+            <div id="baseline"></div>
             <canvas id="padCanvas"></canvas>
         </div>
 
@@ -245,13 +253,13 @@
     let currentImage = null;
     let currentRotation = 0;
     let historyStack = [];
-    let selectRect = null; // {x, y, w, h}
+    let selectRect = null;
     let isSelecting = false;
     let startX, startY;
     let isForcedLandscape = false;
     let tempSignatureData = null;
 
-    // --- ABRIR ARQUIVO ---
+    // --- ABRIR ---
     document.getElementById('fileInput').addEventListener('change', async (e) => {
         const file = e.target.files[0];
         if(!file) return;
@@ -290,7 +298,6 @@
         const d = await file.arrayBuffer();
         const pdf = await pdfjsLib.getDocument(d).promise;
         const page = await pdf.getPage(1);
-        // Resolução insana para Desktop HD (Scale 4.0)
         const viewport = page.getViewport({scale: 4.0});
         const c = document.createElement('canvas');
         c.width = viewport.width; c.height = viewport.height;
@@ -312,7 +319,7 @@
         renderMain();
     }
 
-    // --- RENDER MAIN ---
+    // --- RENDER ---
     function rotateImage(deg) {
         if(!currentImage) return;
         currentRotation = (currentRotation + deg) % 360;
@@ -384,7 +391,7 @@
     mainCanvas.addEventListener('touchmove', moveSel, {passive:false});
     mainCanvas.addEventListener('touchend', endSel);
 
-    // --- ENGINE V20: PROPORTIONAL RATIO ---
+    // --- ENGINE V22: FIT TO BOX ---
     function checkOrientation() {
         if(window.innerHeight > window.innerWidth) {
             modalContent.classList.add('force-landscape');
@@ -398,7 +405,6 @@
     function openModal() {
         modal.style.display = 'flex';
         checkOrientation();
-        // Delay crítico para o CSS aplicar a rotação antes de medirmos o container
         setTimeout(() => { resizePad(true); }, 50);
         window.addEventListener('resize', handleResize);
     }
@@ -427,43 +433,25 @@
         }
     }
 
-    // FUNÇÃO MASTER DE REDIMENSIONAMENTO PROPORCIONAL
+    // TELA CHEIA PARA ASSINAR
     function resizePad(clean) {
         const container = document.getElementById('padContainer');
+        const dpr = Math.max(window.devicePixelRatio || 1, 3.0);
         
-        // Espaço disponível (descontando padding visual)
-        const maxWidth = container.clientWidth - 40; 
-        const maxHeight = container.clientHeight - 40;
+        const w = container.offsetWidth;
+        const h = container.offsetHeight;
 
-        // Ratio do Crop selecionado pelo usuário
-        const targetRatio = Math.abs(selectRect.w / selectRect.h);
-
-        // Calcula tamanho visual ideal (Fit to Screen maintaining Ratio)
-        let visualW = maxWidth;
-        let visualH = visualW / targetRatio;
-
-        if (visualH > maxHeight) {
-            visualH = maxHeight;
-            visualW = visualH * targetRatio;
-        }
-
-        // Aplica tamanho visual no CSS do Canvas (Centralizado)
-        padCanvas.style.width = `${visualW}px`;
-        padCanvas.style.height = `${visualH}px`;
+        padCanvas.style.width = `${w}px`;
+        padCanvas.style.height = `${h}px`;
+        padCanvas.width = w * dpr;
+        padCanvas.height = h * dpr;
         
-        // Aplica tamanho interno para Alta Resolução (HD/4K)
-        // Usa DPR do dispositivo, mas no mínimo 2.5 para garantir nitidez em monitores comuns
-        const dpr = Math.max(window.devicePixelRatio || 1, 2.5);
-        padCanvas.width = visualW * dpr;
-        padCanvas.height = visualH * dpr;
         padCtx.scale(dpr, dpr);
-        
-        // Estilo da Caneta (Azul Bic Sólido)
         padCtx.lineWidth = 4;
         padCtx.lineJoin = 'round';
         padCtx.lineCap = 'round';
         padCtx.strokeStyle = '#0033cc';
-        padCtx.shadowBlur = 0; // Removido para evitar sujeira/pontilhado no PC
+        padCtx.shadowBlur = 0;
 
         if(clean) clearPad();
     }
@@ -474,30 +462,19 @@
         document.getElementById('watermark').style.display = 'block'; 
     }
 
-    // --- DESENHO & MATRIZ DE CORREÇÃO ---
+    // --- INPUT ---
     let points = [], isDrawing = false;
 
     function getCorrectPos(e) {
         const pos = getClientPos(e);
-        const r = padCanvas.getBoundingClientRect(); // Bounding rect já pega a posição CSS final visual
-        
+        const r = padCanvas.getBoundingClientRect();
         if(!isForcedLandscape) {
-             // Mapeamento normal, mas considerando o scaling interno do canvas x visual
-             const scaleX = padCanvas.width / r.width; // Fator DPR interno
-             const scaleY = padCanvas.height / r.height;
-             
-             // Como usamos ctx.scale(dpr, dpr), nós desenhamos em coordenadas lógicas (CSS pixels)
-             // O context entende coordenadas lógicas.
              return { x: pos.x - r.left, y: pos.y - r.top };
         } else {
-             // FORCE LANDSCAPE (Celular em pé)
-             // O "X" físico do toque vira "Y" do canvas
+             // FORCE LANDSCAPE COORDS
              const physicalX = pos.x - r.left;
              const physicalY = pos.y - r.top;
-             return {
-                 x: physicalY,
-                 y: r.width - physicalX
-             };
+             return { x: physicalY, y: r.width - physicalX };
         }
     }
 
@@ -507,11 +484,7 @@
         const p = getCorrectPos(e);
         points.push(p);
         document.getElementById('watermark').style.display = 'none';
-        
-        padCtx.beginPath();
-        padCtx.moveTo(p.x, p.y);
-        padCtx.lineTo(p.x, p.y);
-        padCtx.stroke();
+        padCtx.beginPath(); padCtx.moveTo(p.x, p.y); padCtx.lineTo(p.x, p.y); padCtx.stroke();
     }
 
     function moveDraw(e) {
@@ -519,17 +492,12 @@
         e.preventDefault();
         const p = getCorrectPos(e);
         points.push(p);
-
         if(points.length < 3) return;
         const last = points[points.length-1];
         const prev = points[points.length-2];
         const cpX = (prev.x + last.x) / 2;
         const cpY = (prev.y + last.y) / 2;
-
-        padCtx.beginPath();
-        padCtx.moveTo(prev.x, prev.y);
-        padCtx.quadraticCurveTo(cpX, cpY, last.x, last.y);
-        padCtx.stroke();
+        padCtx.beginPath(); padCtx.moveTo(prev.x, prev.y); padCtx.quadraticCurveTo(cpX, cpY, last.x, last.y); padCtx.stroke();
     }
 
     function endDraw() { isDrawing=false; points=[]; tempSignatureData = padCanvas.toDataURL(); }
@@ -541,14 +509,37 @@
     padCanvas.addEventListener('touchmove', moveDraw, {passive:false});
     padCanvas.addEventListener('touchend', endDraw);
 
-    // --- FINALIZAR ---
+    // --- FINALIZAR (LÓGICA V22: FIT/CONTAIN) ---
     function applySignature() {
         if(currentImage) { historyStack.push(currentImage.src); document.getElementById('btnUndo').style.opacity=1; document.getElementById('btnUndo').style.pointerEvents='auto'; }
         closeModal();
         renderMain();
         mainCtx.imageSmoothingEnabled = true;
         mainCtx.imageSmoothingQuality = 'high';
-        mainCtx.drawImage(padCanvas, selectRect.x, selectRect.y, selectRect.w, selectRect.h);
+
+        // LÓGICA V22: CABER DENTRO (FIT/CONTAIN)
+        // Calcula escala para largura e para altura
+        const scaleX = selectRect.w / padCanvas.width;
+        const scaleY = selectRect.h / padCanvas.height;
+
+        // Escolhe o menor ratio para garantir que caiba em ambos (não corta nada)
+        // Isso encolhe a assinatura se o crop for muito fino (altura) ou muito estreito (largura)
+        const scale = Math.min(scaleX, scaleY);
+
+        const finalW = padCanvas.width * scale;
+        const finalH = padCanvas.height * scale;
+
+        // Centraliza no retângulo
+        const offsetX = (selectRect.w - finalW) / 2;
+        const offsetY = (selectRect.h - finalH) / 2;
+
+        mainCtx.drawImage(padCanvas, 
+            selectRect.x + offsetX, 
+            selectRect.y + offsetY, 
+            finalW, 
+            finalH
+        );
+
         const i = new Image();
         i.src = mainCanvas.toDataURL('image/png', 1.0);
         i.onload = () => { currentImage = i; renderMain(); showToast("Assinado com Sucesso!"); }
